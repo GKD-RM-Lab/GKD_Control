@@ -33,11 +33,11 @@ namespace Config
         },
 
         .turn_pid_config{
-            .kp = 15000.0f,       // KP
-            .ki = 10.0f,          // KI
-            .kd = 0.0f,           // KD
-            .max_out = 14000.0f,  // MAX_OUT
-            .max_iout = 2000.0f,  // MAX_IOUT
+            7000.0f,
+            2.0f,
+            0.0f,
+            30000.0f,
+            5000.0f,
         },
 
         .follow_gimbal_pid_config{
@@ -47,6 +47,14 @@ namespace Config
             .max_out = 6.0f,   // MAX_OUT
             .max_iout = 0.2f,  // MAX_IOUT
         },
+
+        .turn_pos_pid_config{
+            12.0f,  // KP
+            0.0f,   // KI
+            0.3f,   // KD
+            10.0f,  // MAX_OUT
+            0.0f,   // MAX_IOUT
+        }
 
         .turn_init_ecd = { 
             0,    //wheel1 

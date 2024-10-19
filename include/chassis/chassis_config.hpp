@@ -15,6 +15,7 @@ namespace Chassis {
         Pid::Pid_config speed_pid_config;
         Pid::Pid_config turn_pid_config;
         Pid::Pid_config follow_gimbal_pid_config;
+        Pid::Pid_config turn_pos_pid_config;   //May I have your attention please:hello,this is position pid
         std::array<uint16_t, 4> turn_init_ecd;
     };
 

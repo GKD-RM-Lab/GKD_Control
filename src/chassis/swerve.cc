@@ -4,10 +4,12 @@
 
 namespace Chassis
 {
-    Swerve::Swerve(const SwerveConfig &config) : chassis_angle_pid(config.follow_gimbal_pid_config) {
-        speed_motors_.assign(4, Hardware::Motor{ config.speed_pid_config });
-        turn_motors_.assign(4, Hardware::Motor{ config.turn_pid_config });
-        turn_init_ecd_ = config.turn_init_ecd;
+    Swerve::Swerve(const SwerveConfig &config) 
+        : chassis_angle_pid(config.follow_gimbal_pid_config), 
+        turn_pid_(config.turn_pos_pid_config) {                                    //position pid
+            speed_motors_.assign(4, Hardware::Motor{ config.speed_pid_config });
+            turn_motors_.assign(4, Hardware::Motor{ config.turn_pid_config });
+            turn_init_ecd_ = config.turn_init_ecd;  
     }
 
     void Swerve::init(const std::shared_ptr<Robot::Robot_set> &robot) {
@@ -18,7 +20,7 @@ namespace Chassis
         }
         for (size_t i = 0; i < turn_motors_.size(); i++) {
             auto &mot = turn_motors_[i];
-            Robot::hardware->register_callback<CAN1>(0x201 + i, [&mot](const auto &frame) { mot.unpack(frame); });
+            Robot::hardware->register_callback<CAN1>(0x205 + i, [&mot](const auto &frame) { mot.unpack(frame); });
         }
     }
 
@@ -26,7 +28,7 @@ namespace Chassis
         bool init_finish = false;
         update_data();
         while (!init_finish) {
-            while (turn_angle_[0] > 0.1 && turn_angle_[1] > 0.1 && turn_angle_[2] > 0.1 && turn_angle_[3] > 0.1) {
+            while (turn_angle_[0] > 0.1 || turn_angle_[1] > 0.1 || turn_angle_[2] > 0.1 || turn_angle_[3] > 0.1) {
                 LOG_INFO(
                     "angle0: %f, angle1: %f, angle2: %f, angle3: %f",
                     turn_angle_[0],
@@ -41,7 +43,7 @@ namespace Chassis
                     mot.pid_ctrler.calc(mot.speed, mot.speed_set);
                     mot.give_current = (int16_t)-mot.pid_ctrler.out;
                 }
-                Robot::hardware->send<CAN1>(Hardware::get_frame(0x201, turn_motors_));
+                Robot::hardware->send<CAN1>(Hardware::get_frame(0x1FF, turn_motors_));
                 UserLib::sleep_ms(Config::CHASSIS_CONTROL_TIME);
             }
             init_finish = true;
@@ -71,7 +73,7 @@ namespace Chassis
                 }
             }
             Robot::hardware->send<CAN0>(Hardware::get_frame(0x200, speed_motors_));
-            Robot::hardware->send<CAN1>(Hardware::get_frame(0x200, turn_motors_));
+            Robot::hardware->send<CAN1>(Hardware::get_frame(0x1FF, turn_motors_));
             UserLib::sleep_ms(Config::CHASSIS_CONTROL_TIME);
         }
     }
