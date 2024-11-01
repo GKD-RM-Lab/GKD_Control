@@ -27,13 +27,13 @@ namespace Pid
         out = 0;
     }
 
-    Pid_rad::Pid_rad(const Pid_config &config) : Pid_config(config) {
+    Pid_rad::Pid_rad(const Pid_config &config) : Pid_config(config), ramp(10, 1.f / 1000) {
     }
 
     void Pid_rad::calc(fp32 get, fp32 set) {
         last_err = err;
-
-        err = UserLib::rad_format(set - get);
+        ramp.update(UserLib::rad_format(set - get));
+        err = ramp.out;
         Pout = kp * err;
         Iout += ki * err;
         Dout = kd * (err - last_err);

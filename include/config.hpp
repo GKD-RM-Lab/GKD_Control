@@ -33,11 +33,11 @@ namespace Config
         },
 
         .turn_pid_config{
-            7000.0f,
-            2.0f,
+            2000.f,
             0.0f,
-            30000.0f,
-            5000.0f,
+            100.f,
+            20000.0f,
+            0.0f,
         },
 
         .follow_gimbal_pid_config{
@@ -49,18 +49,18 @@ namespace Config
         },
 
         .turn_pos_pid_config{
-            12.0f,  // KP
-            0.0f,   // KI
-            0.3f,   // KD
-            10.0f,  // MAX_OUT
-            0.0f,   // MAX_IOUT
-        }
+            12.0f,
+            .0f,
+            10.0f,
+            10.0f,
+            0.0f,
+        },
 
-        .turn_init_ecd = { 
-            0,    //wheel1 
-            0,    //wheel2
-            0, 
-            0 
+        .turn_init_ecd{
+            2669,  // id1
+            6077,
+            3756,
+            3400  // id4
         } 
     };
 

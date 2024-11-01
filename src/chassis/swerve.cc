@@ -4,12 +4,13 @@
 
 namespace Chassis
 {
-    Swerve::Swerve(const SwerveConfig &config) 
-        : chassis_angle_pid(config.follow_gimbal_pid_config), 
-        turn_pid_(config.turn_pos_pid_config) {                                    //position pid
-            speed_motors_.assign(4, Hardware::Motor{ config.speed_pid_config });
-            turn_motors_.assign(4, Hardware::Motor{ config.turn_pid_config });
-            turn_init_ecd_ = config.turn_init_ecd;  
+    Swerve::Swerve(const SwerveConfig &config) : chassis_angle_pid(config.follow_gimbal_pid_config) {
+        speed_motors_.assign(4, Hardware::Motor{ config.speed_pid_config });
+        turn_motors_.assign(4, Hardware::Motor{ config.turn_pid_config });
+        turn_init_ecd_ = config.turn_init_ecd;
+        for (int i = 0; i < 4; i++) {
+            turn_pid_.push_back(Pid::Pid_rad(config.turn_pos_pid_config));
+        }
     }
 
     void Swerve::init(const std::shared_ptr<Robot::Robot_set> &robot) {
@@ -26,11 +27,12 @@ namespace Chassis
 
     void Swerve::init_task() {
         bool init_finish = false;
+        UserLib::sleep_ms(Config::CHASSIS_CONTROL_TIME);
         update_data();
         while (!init_finish) {
             while (turn_angle_[0] > 0.1 || turn_angle_[1] > 0.1 || turn_angle_[2] > 0.1 || turn_angle_[3] > 0.1) {
                 LOG_INFO(
-                    "angle0: %f, angle1: %f, angle2: %f, angle3: %f",
+                    "wheel1: %f, wheel2: %f, wheel3: %f, wheel4: %f",
                     turn_angle_[0],
                     turn_angle_[1],
                     turn_angle_[2],
@@ -38,10 +40,12 @@ namespace Chassis
                 update_data();
                 for (int i = 0; i < 4; i++) {
                     auto &mot = turn_motors_[i];
-                    turn_pid_[i].calc(mot.motor_measure.ecd, turn_init_ecd_[i]);
+                    float mot_rad = UserLib::rad_format(Config::M6020_ECD_TO_RAD * (fp32)mot.motor_measure.ecd);
+                    float turn_rad = UserLib::rad_format(Config::M6020_ECD_TO_RAD * (fp32)turn_init_ecd_[i]);
+                    turn_pid_[i].calc(mot_rad, turn_rad);
                     mot.speed_set = turn_pid_[i].out;
                     mot.pid_ctrler.calc(mot.speed, mot.speed_set);
-                    mot.give_current = (int16_t)-mot.pid_ctrler.out;
+                    mot.give_current = (int16_t)mot.pid_ctrler.out;
                 }
                 Robot::hardware->send<CAN1>(Hardware::get_frame(0x1FF, turn_motors_));
                 UserLib::sleep_ms(Config::CHASSIS_CONTROL_TIME);

@@ -4,7 +4,7 @@
 #include <climits>
 #include <cmath>
 #include <algorithm>
-
+#include "ramp.hpp"
 #include "types.hpp"
 #include "user_lib.hpp"
 
@@ -40,6 +40,7 @@ namespace Pid
         void clean();
 
        public:
+        UserLib::Ramp ramp;
         fp32 out = 0.f;
         fp32 Pout = 0.f;
         fp32 Iout = 0.f;
