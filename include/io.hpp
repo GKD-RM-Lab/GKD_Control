@@ -9,12 +9,20 @@
 using CAN = IO::Can_interface;
 
 namespace IO {
-    extern std::vector<std::thread> io_handles;
     template<typename T>
     class IO {
     private:
         std::unordered_map<std::string, T*> data;
+        std::vector<std::thread> io_handles;
     public:
+
+        ~IO() {
+            for(auto &handle : io_handles) {
+                handle.detach();
+            }
+            io_handles.clear();
+        }
+
         T* operator[](const std::string& key) const {
             auto p = data.find(key);
             if(p == data.end()) {

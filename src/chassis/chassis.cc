@@ -1,25 +1,20 @@
-#include "chassis.hpp"
+#include "chassis/chassis.hpp"
+#include "chassis_config.hpp"
 
 #include "config.hpp"
 #include "user_lib.hpp"
 
 namespace Chassis
 {
-    Chassis::Chassis() : chassis_angle_pid(nullptr) {
-        fp32 fuckme = 0.f;
-        motors.reserve(4);
-        for (int i = 1; i <= 4; i++) {
-            motors.push_back(Hardware::M3508("CAN_CHASSIS", i));
-        }
-    }
+    Chassis::Chassis(const ChassisConfig &config) : config(config),
+    motors(config.wheels_config.begin(), config.wheels_config.end()) {}
 
     void Chassis::init(const std::shared_ptr<Robot::Robot_set> &robot) {
         robot_set = robot;
-        chassis_angle_pid = new Pid::PidRad(Config::CHASSIS_FOLLOW_GIMBAL_PID_CONFIG, robot_set->gimbal3_yaw_relative);
-
-        for (auto &m : motors) {
-            m.setCtrl(Pid::PidPosition(Config::M3508_SPEED_PID_CONFIG, m.angular_velocity));
-            m.enable();
+        chassis_angle_pid = Pid::PidRad(config.chassis_follow_gimbal_pid_config, robot_set->gimbal3_yaw_relative);
+        for (auto &motor : motors) {
+            motor.setCtrl(Pid::PidPosition(config.wheel_speed_pid_config, motor.data_.output_linear_velocity));
+            motor.enable();
         }
     }
 
@@ -27,8 +22,8 @@ namespace Chassis
         while (true) {
             decomposition_speed();
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
-                for (auto &m : motors) {
-                    m.set(0.f);
+                for (auto &motor : motors) {
+                    motor.set(0.f);
                 }
             } else {
                 fp32 max_speed = 0.f;
@@ -45,7 +40,7 @@ namespace Chassis
                     motors[i].set(wheel_speed[i]);
                 }
             }
-            UserLib::sleep_ms(Config::CHASSIS_CONTROL_TIME);
+            UserLib::sleep_ms(config.ChassisControlTime);
         }
     }
 
@@ -57,8 +52,8 @@ namespace Chassis
             vy_set = sin_yaw * robot_set->vx_set + cos_yaw * robot_set->vy_set;
 
             if (robot_set->wz_set == 0.f) {
-                chassis_angle_pid->set(0.f);
-                wz_set = chassis_angle_pid->out;
+                chassis_angle_pid.set(0.f);
+                wz_set = chassis_angle_pid.out;
             } else {
                 wz_set = robot_set->wz_set;
             }

@@ -116,6 +116,7 @@ namespace Config
     constexpr fp32 M6020_ECD_TO_RAD = 2.f * M_PIf / 8192.f;
     constexpr fp32 M9025_ECD_TO_RAD = 2.f * M_PIf / 65535.f;
     constexpr fp32 RPM_TO_RAD_S = 2.f * M_PIf / 60.f;
+    constexpr fp32 temp = CHASSIS_MOTOR_RPM_TO_VECTOR_SEN / (RPM_TO_RAD_S / 19.f);
     constexpr fp32 CHASSIS_CONTROL_FREQUENCE = 500.0f;
 #define STAND
 #ifdef STAND

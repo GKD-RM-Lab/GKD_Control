@@ -7,7 +7,7 @@ project(new_infantry)
 set(CMAKE_CXX_STANDARD 20)
 
 include_directories(./3rdparty/include)
-include_directories(./include)
+include_directories(./include ./include/chassis)
 
 add_compile_options(-D__DEBUG__)
 add_compile_options(-Wno-pointer-arith -Wno-unused-parameter)

@@ -14,7 +14,7 @@ namespace Robot
         // NOTE: register motors here
         imu.init(robot_set);
         // cv_controller_.init(robot_set);
-        // chassis.init(robot_set);
+        chassis.init(robot_set);
         gimbal.init(robot_set);
         // gimbal_l.init(robot_set);
         // gimbal_big_yaw.init(robot_set);

@@ -4,5 +4,4 @@
 #include "io.hpp"
 
 namespace IO {
-    std::vector<std::thread> io_handles;
 }

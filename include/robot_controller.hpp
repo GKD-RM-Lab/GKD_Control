@@ -3,7 +3,7 @@
 #include <thread>
 
 #include "can.hpp"
-#include "chassis.hpp"
+#include "chassis/chassis.hpp"
 #include "device/cv_controller.hpp"
 #include "device/imu.hpp"
 #include "gimbal.hpp"
