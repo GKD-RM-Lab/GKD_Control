@@ -4,7 +4,7 @@
 
 namespace Robot
 {
-    Robot_ctrl::Robot_ctrl() : chassis(Config::chassis_config) {
+    Robot_ctrl::Robot_ctrl() : chassis(Config::chassis_config), gimbal(Config::gimbal_right_config) {
         robot_set = std::make_shared<Robot_set>();
     }
 

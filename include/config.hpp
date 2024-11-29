@@ -4,6 +4,7 @@
 #include "pid_controller.hpp"
 #include "types.hpp"
 #include "chassis/chassis_config.hpp"
+#include "gimbal/gimbal_config.hpp"
 
 namespace Config
 {
@@ -29,20 +30,106 @@ namespace Config
             Hardware::DJIMotorConfig{3508, "CAN_CHASSIS", 4, 0.075}
         },
         .chassis_follow_gimbal_pid_config = {
-            .kp = 4.0f,
-            .ki = 0.0f,
-            .kd = 10.0f,
-            .max_out = 6.0f,
-            .max_iout = 0.2f,
+            .kp =           4.0f,
+            .ki =           0.0f,
+            .kd =           10.0f,
+            .max_out =      6.0f,
+            .max_iout =     0.2f,
         },
         .wheel_speed_pid_config = {
-            .kp = 15000.0f,
-            .ki = 10.0f,
-            .kd = 0.0f,
-            .max_out = 14000.0f,
-            .max_iout = 2000.0f,
+            .kp =           15000.0f,
+            .ki =           10.0f,
+            .kd =           0.0f,
+            .max_out =      14000.0f,
+            .max_iout =     2000.0f,
         },
-        .ChassisControlTime = 2
+        .ControlTime = 2
+    };
+
+    const Gimbal::GimbalConfig gimbal_left_config {
+        .imu_serial_port = "/dev/IMU_LEFT",
+        .yaw_motor_config = Hardware::DJIMotorConfig(6020, "CAN_LEFT_HEAD", 1),
+        .pitch_motor_config = Hardware::DJIMotorConfig(6020, "CAN_LEFT_HEAD", 2),
+        .yaw_rate_pid_config = {
+            .kp =           5000.f,
+            .ki =           0.0f,
+            .kd =           0.f,
+            .max_out =      20000.0f,
+            .max_iout =     5000.0f,
+        },
+        .pitch_rate_pid_config = {
+            .kp =           5500.0f,
+            .ki =           100.0f,
+            .kd =           0.0f,
+            .max_out =      30000.0f,
+            .max_iout =     5000.0f,
+        },
+        .yaw_relative_pid_config ={
+            .kp =           8.0f,
+            .ki =           0.0f,
+            .kd =           0.3f,
+            .max_out =      10.0f,
+            .max_iout =     0.0f,
+        },
+        .yaw_absolute_pid_config = {
+            .kp =           12.0f,
+            .ki =           0.0f,
+            .kd =           0.3f,
+            .max_out =      10.0f,
+            .max_iout =     0.0f,
+        },
+        .pitch_absolute_pid_config = {
+            .kp =           15.0f,
+            .ki =           0.0f,
+            .kd =           10.0f,
+            .max_out =      10.0f,
+            .max_iout =     0.0f,
+        },
+        .ControlTime = 1,
+        .YawOffSet = 3366
+    };
+
+    const Gimbal::GimbalConfig gimbal_right_config {
+        .imu_serial_port = "/dev/IMU_RIGHT",
+        .yaw_motor_config = Hardware::DJIMotorConfig(6020, "CAN_RIGHT_HEAD", 2),
+        .pitch_motor_config = Hardware::DJIMotorConfig(6020, "CAN_RIGHT_HEAD", 1),
+        .yaw_rate_pid_config = {
+            .kp =           5000.f,
+            .ki =           0.0f,
+            .kd =           0.f,
+            .max_out =      20000.0f,
+            .max_iout =     5000.0f,
+        },
+        .pitch_rate_pid_config = {
+            .kp =           5500.0f,
+            .ki =           100.0f,
+            .kd =           0.0f,
+            .max_out =      30000.0f,
+            .max_iout =     5000.0f,
+        },
+        .yaw_relative_pid_config ={
+            .kp =           8.0f,
+            .ki =           0.0f,
+            .kd =           0.3f,
+            .max_out =      10.0f,
+            .max_iout =     0.0f,
+        },
+        .yaw_absolute_pid_config = {
+            .kp =           12.0f,
+            .ki =           0.0f,
+            .kd =           0.3f,
+            .max_out =      10.0f,
+            .max_iout =     0.0f,
+        },
+        .pitch_absolute_pid_config = {
+            .kp =           15.0f,
+            .ki =           0.0f,
+            .kd =           10.0f,
+            .max_out =      10.0f,
+            .max_iout =     0.0f,
+        },
+        .ControlTime = 1,
+        .YawOffSet = 3459
     };
 
     // NOTE: PID CONFIG

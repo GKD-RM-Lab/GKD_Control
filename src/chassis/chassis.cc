@@ -40,7 +40,7 @@ namespace Chassis
                     motors[i].set(wheel_speed[i]);
                 }
             }
-            UserLib::sleep_ms(config.ChassisControlTime);
+            UserLib::sleep_ms(config.ControlTime);
         }
     }
 
