@@ -15,6 +15,7 @@ namespace Device
         robot_set->gyro1_ins_roll_v = (pkg.roll_v * (M_PIf / 180)) / 1000;
         update_time();
     }
+
     void IMU::unpack2(const Types::ReceivePacket &pkg) {
         robot_set->gyro2_ins_yaw = UserLib::rad_format(pkg.yaw * (M_PIf / 180));
         robot_set->gyro2_ins_pitch = UserLib::rad_format(pkg.pitch * (M_PIf / 180));

@@ -15,7 +15,7 @@
 
 namespace IO
 {
-    class Server_socket_interface : public IO::Callback<Robot::Vison_control, Robot::ReceiveGimbalPacket>
+    class Server_socket_interface : public Callback<Robot::Vison_control, Robot::ReceiveGimbalPacket>
 
     {
        public:

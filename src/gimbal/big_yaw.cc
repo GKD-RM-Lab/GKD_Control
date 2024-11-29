@@ -1,5 +1,5 @@
 #include "config.hpp"
-#include "gimbal.hpp"
+#include "gimbal/gimbal.hpp"
 #include "user_lib.hpp"
 
 namespace Gimbal

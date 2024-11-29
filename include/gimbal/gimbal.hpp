@@ -42,8 +42,8 @@ namespace Gimbal
         void update_data();
 
        public:
-        Hardware::M6020 yaw_motor;
-        Hardware::M6020 pitch_motor;
+        Hardware::DJIMotor yaw_motor;
+        Hardware::DJIMotor pitch_motor;
     };
 
     class Gimbal_L : public Gimbal

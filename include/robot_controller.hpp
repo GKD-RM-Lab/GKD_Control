@@ -6,7 +6,7 @@
 #include "chassis/chassis.hpp"
 #include "device/cv_controller.hpp"
 #include "device/imu.hpp"
-#include "gimbal.hpp"
+#include "gimbal/gimbal.hpp"
 #include "robot.hpp"
 #include "serial_interface.hpp"
 #include "shoot.hpp"

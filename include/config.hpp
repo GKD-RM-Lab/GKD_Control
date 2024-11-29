@@ -3,6 +3,7 @@
 #include <vector>
 #include "pid_controller.hpp"
 #include "types.hpp"
+#include "chassis/chassis_config.hpp"
 
 namespace Config
 {
@@ -18,6 +19,30 @@ namespace Config
         {"/dev/IMU_RIGHT", 115200, 2000},
         {"/dev/IMU_LEFT", 115200, 2000},
         {"/dev/IMU_BIG_YAW", 115200, 2000}
+    };
+
+    const Chassis::ChassisConfig chassis_config {
+        .wheels_config = {
+            Hardware::DJIMotorConfig{3508, "CAN_CHASSIS", 1, 0.075},
+            Hardware::DJIMotorConfig{3508, "CAN_CHASSIS", 2, 0.075},
+            Hardware::DJIMotorConfig{3508, "CAN_CHASSIS", 3, 0.075},
+            Hardware::DJIMotorConfig{3508, "CAN_CHASSIS", 4, 0.075}
+        },
+        .chassis_follow_gimbal_pid_config = {
+            .kp = 4.0f,
+            .ki = 0.0f,
+            .kd = 10.0f,
+            .max_out = 6.0f,
+            .max_iout = 0.2f,
+        },
+        .wheel_speed_pid_config = {
+            .kp = 15000.0f,
+            .ki = 10.0f,
+            .kd = 0.0f,
+            .max_out = 14000.0f,
+            .max_iout = 2000.0f,
+        },
+        .ChassisControlTime = 2
     };
 
     // NOTE: PID CONFIG

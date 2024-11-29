@@ -4,7 +4,7 @@
 
 namespace Robot
 {
-    Robot_ctrl::Robot_ctrl() {
+    Robot_ctrl::Robot_ctrl() : chassis(Config::chassis_config) {
         robot_set = std::make_shared<Robot_set>();
     }
 
@@ -46,12 +46,12 @@ namespace Robot
 
     void Robot_ctrl::start() {
         chassis_thread = std::make_unique<std::thread>(&Chassis::Chassis::task, &chassis);
-        gimbal_thread = std::make_unique<std::thread>(&Gimbal::Gimbal::task, &gimbal);
-        gimbal_l_thread = std::make_unique<std::thread>(&Gimbal::Gimbal_L::task, &gimbal_l);
-        gimbal_big_yaw_thread = std::make_unique<std::thread>(&Gimbal::Gimbal_big_yaw::task, &gimbal_big_yaw);
+        // gimbal_thread = std::make_unique<std::thread>(&Gimbal::Gimbal::task, &gimbal);
+        // gimbal_l_thread = std::make_unique<std::thread>(&Gimbal::Gimbal_L::task, &gimbal_l);
+        // gimbal_big_yaw_thread = std::make_unique<std::thread>(&Gimbal::Gimbal_big_yaw::task, &gimbal_big_yaw);
         // shoot_thread = std::make_unique<std::thread>(&Shoot::Shoot::task, &shoot);
 
-        vision_thread = std::make_unique<std::thread>(&Device::Cv_controller::task, &cv_controller_);
+        // vision_thread = std::make_unique<std::thread>(&Device::Cv_controller::task, &cv_controller_);
     }
 
     void Robot_ctrl::join() const {
@@ -76,8 +76,8 @@ namespace Robot
         for(auto & [name, baud_rate, simple_timeout] : Config::SerialInitList) {
             IO::io<SERIAL>.insert(name, baud_rate, simple_timeout);
         }
-        for(auto & name : Config :: SocketInitList) {
-            IO::io<SOCKET>.insert(name);
-        }
+        // for(auto & name : Config :: SocketInitList) {
+        //     IO::io<SOCKET>.insert(name);
+        // }
     }
 };  // namespace Robot

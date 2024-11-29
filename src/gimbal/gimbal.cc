@@ -1,4 +1,4 @@
-#include "gimbal.hpp"
+#include "gimbal/gimbal.hpp"
 
 #include "config.hpp"
 #include "user_lib.hpp"
@@ -7,8 +7,7 @@
 namespace Gimbal
 {
 
-    Gimbal::Gimbal() : yaw_motor("CAN_RIGHT_HEAD", 2), pitch_motor("CAN_RIGHT_HEAD", 1) {
-    }
+    Gimbal::Gimbal() : yaw_motor(6020, "CAN_RIGHT_HEAD", 2), pitch_motor(6020, "CAN_RIGHT_HEAD", 1) {}
 
     void Gimbal::init(const std::shared_ptr<Robot::Robot_set> &robot) {
         robot_set = robot;
