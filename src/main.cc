@@ -11,19 +11,19 @@ int main(int argc, char **argv) {
 
     robot.load_hardware();
     robot.start_init();
-    robot.init_join();
-    // LOG_INFO("init finished!\n");
     std::thread out_thread([&]() {
         while (true) {
-            std::cout << robot.robot_set->gyro1_ins_yaw << ' ' << robot.robot_set->gyro1_ins_pitch << ' '
-            << ' ' << robot.robot_set->gyro1_ins_roll << std::endl;
+            std::cout << robot.robot_set->gimbal1_yaw_set << ' ' << robot.robot_set->gyro1_ins_yaw << std::endl;
             UserLib::sleep_ms(1);
         }
     });
+    robot.init_join();
+    std::cout << "finish" << std::endl;
+    // LOG_INFO("init finished!\n");
 
     robot.robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FINISH_INIT);
-    robot.robot_set->vx_set = 0.1;
-
+    // robot.robot_set->vx_set = 0.1;
+    //
     robot.start();
     robot.join();
     return 0;

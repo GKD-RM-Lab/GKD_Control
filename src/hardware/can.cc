@@ -15,6 +15,8 @@ namespace IO
     }
 
     void Can_interface::init(const char *can_channel) {
+        const std::string open_cmd = "echo 1 | sudo -S ip link set " + name + " up type can bitrate 1000000";
+        system(open_cmd.c_str());
         // create CAN socket
         if ((soket_id = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
             LOG_ERR("Error while creating socket");

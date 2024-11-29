@@ -7,6 +7,7 @@
 #include "device/cv_controller.hpp"
 #include "device/imu.hpp"
 #include "gimbal/gimbal.hpp"
+#include "gimbal/gimbal_temp.hpp"
 #include "robot.hpp"
 #include "serial_interface.hpp"
 #include "shoot.hpp"
@@ -40,11 +41,9 @@ namespace Robot
 
         std::shared_ptr<Robot_set> robot_set;
 
-        Device::IMU imu;
         Device::Cv_controller cv_controller_;
         Chassis::Chassis chassis;
-        Gimbal::Gimbal gimbal;
-        Gimbal::Gimbal_L gimbal_l;
+        Gimbal::GimbalT gimbal;
         Gimbal::Gimbal_big_yaw gimbal_big_yaw;
         Shoot::Shoot shoot;
     };

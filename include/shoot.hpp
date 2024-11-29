@@ -1,3 +1,5 @@
+#pragma once
+
 #include "dji_motor.hpp"
 #include "ramp.hpp"
 #include "robot.hpp"

@@ -65,6 +65,7 @@ namespace Hardware {
 
         data_.output_angular_velocity = data_.rotor_angular_velocity * data_.reduction_ratio;
         data_.output_linear_velocity = data_.rotor_linear_velocity * data_.reduction_ratio;
+        update_time();
     }
 
     void DJIMotor::set(float x) {

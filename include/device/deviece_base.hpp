@@ -1,7 +1,8 @@
-#pragma once
+// #pragma
+#ifndef _DEVIECE_BASE_H
+#define _DEVIECE_BASE_H
 
 #include "chrono"
-#include "config.hpp"
 
 namespace Device
 {
@@ -10,7 +11,7 @@ namespace Device
        public:
         explicit DeviceBase(uint32_t offline_time_t);
         explicit DeviceBase();
-        bool offline();
+        bool offline() const;
 
        protected:
         void update_time();
@@ -22,3 +23,5 @@ namespace Device
         time_point last_time;
     };
 }  // namespace Device
+
+#endif

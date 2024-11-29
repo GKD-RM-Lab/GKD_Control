@@ -1,14 +1,15 @@
 #pragma once
 
-#include "dji_motor.hpp"
+#include <linux/can.h>
 
 #include <array>
 #include <cmath>
 #include <stdexcept>
-#include <linux/can.h>
 
+#include "device/deviece_base.hpp"
 #include "actuator.hpp"
 #include "can.hpp"
+#include "dji_motor.hpp"
 #include "types.hpp"
 
 namespace Hardware {
@@ -62,7 +63,7 @@ namespace Hardware {
             type_(type), can_name_(name), id_(id), radius_(radius) {}
     };
 
-    class DJIMotor final : public Actuator {
+    class DJIMotor final : public Actuator, public Device::DeviceBase {
     public:
         constexpr static fp32 RPM_TO_RAD_S = 2.f * M_PIf / 60.f;
         constexpr static fp32 ECD_8192_TO_RAD = 2.f * M_PIf / 8192.f;
