@@ -7,6 +7,7 @@
 #include "device/cv_controller.hpp"
 #include "device/imu.hpp"
 #include "gimbal/gimbal.hpp"
+#include "gimbal/gimbal_sentry.hpp"
 #include "gimbal/gimbal_temp.hpp"
 #include "robot.hpp"
 #include "serial_interface.hpp"
@@ -44,7 +45,7 @@ namespace Robot
         Device::Cv_controller cv_controller_;
         Chassis::Chassis chassis;
         Gimbal::GimbalT gimbal;
-        Gimbal::Gimbal_big_yaw gimbal_big_yaw;
+        Gimbal::GimbalSentry gimbal_big_yaw;
         Shoot::Shoot shoot;
     };
 

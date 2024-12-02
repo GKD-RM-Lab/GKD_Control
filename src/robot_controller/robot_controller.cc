@@ -15,28 +15,26 @@ namespace Robot
         // cv_controller_.init(robot_set);
         chassis.init(robot_set);
         gimbal.init(robot_set);
-        // gimbal_l.init(robot_set);
-        // gimbal_big_yaw.init(robot_set);
+        gimbal_big_yaw.init(robot_set);
         //  shoot.init(robot_set);
 
         // start DJIMotorManager thread
         Hardware::DJIMotorManager::start();
-        gimbal_init_thread = std::make_unique<std::thread>(&Gimbal::GimbalT::init_task, &gimbal);
+        // gimbal_init_thread = std::make_unique<std::thread>([&](){gimbal.init_task();});
         // gimbal_l_init_thread = std::make_unique<std::thread>(&Gimbal::Gimbal_L::init_task, &gimbal_l);
-        // gimbal_big_yaw_init_thread = std::make_unique<std::thread>(&Gimbal::Gimbal_big_yaw::init_task,
-        // &gimbal_big_yaw);
+        gimbal_big_yaw_init_thread = std::make_unique<std::thread>([&](){gimbal_big_yaw.init_task();});
     }
 
     void Robot_ctrl::init_join() const {
-        if (gimbal_init_thread != nullptr) {
-            gimbal_init_thread->join();
-        }
+        // if (gimbal_init_thread != nullptr) {
+        //     gimbal_init_thread->join();
+        // }
         // if (gimbal_l_init_thread != nullptr) {
         //     gimbal_l_init_thread->join();
         // }
-        // if (gimbal_big_yaw_init_thread != nullptr) {
-        //     gimbal_big_yaw_init_thread->join();
-        // }
+        if (gimbal_big_yaw_init_thread != nullptr) {
+            gimbal_big_yaw_init_thread->join();
+        }
     }
 
     void Robot_ctrl::start() {
@@ -68,9 +66,9 @@ namespace Robot
         for(auto & name : Config::CanInitList) {
             IO::io<CAN>.insert(name);
         }
-        for(auto & [name, baud_rate, simple_timeout] : Config::SerialInitList) {
-            IO::io<SERIAL>.insert(name, baud_rate, simple_timeout);
-        }
+        // for(auto & [name, baud_rate, simple_timeout] : Config::SerialInitList) {
+        //     IO::io<SERIAL>.insert(name, baud_rate, simple_timeout);
+        // }
         // for(auto & name : Config :: SocketInitList) {
         //     IO::io<SOCKET>.insert(name);
         // }

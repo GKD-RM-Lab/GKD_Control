@@ -17,7 +17,11 @@ file(GLOB_RECURSE SOURCE src/main.cc ./src/*.cc)
 add_executable(${PROJECT_NAME} ${SOURCE}
         include/gimbal/gimbal_config.hpp
         src/gimbal/gimbal_temp.cc
-        include/gimbal/gimbal_temp.hpp)
+        include/gimbal/gimbal_temp.hpp
+        include/device/M9025.hpp
+        src/device/M9025.cc
+        include/gimbal/gimbal_sentry.hpp
+        src/gimbal/gimbal_sentry.cpp)
 
 if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/lib/libserial.a)
     execute_process(
