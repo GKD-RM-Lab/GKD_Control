@@ -17,7 +17,7 @@ namespace Chassis
     }
 
     [[noreturn]] void Chassis::task() {
-        while(true) {
+        while (true) {
             update_data();
             decomposition_speed();
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
@@ -38,8 +38,18 @@ namespace Chassis
         }
     }
 
+    /* chassis speed coordinate
+                ^ X
+        3       |       2 (wheel_speed[2])
+                |
+                |
+       ---------|---------> Y
+                |
+                |
+        0       |       1
+    */
     void Chassis::decomposition_speed() {
-        if(robot_set->mode != Types::ROBOT_MODE::ROBOT_NO_FORCE) {
+        if (robot_set->mode != Types::ROBOT_MODE::ROBOT_NO_FORCE) {
             fp32 sin_yaw, cos_yaw;
             sincosf(robot_set->yaw_relative, &sin_yaw, &cos_yaw);
             vx_set = cos_yaw * robot_set->vx_set - sin_yaw * robot_set->vy_set;
