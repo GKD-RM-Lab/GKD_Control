@@ -40,13 +40,13 @@ namespace Chassis
 
     /* chassis speed coordinate
                 ^ X (forward)
-        3       |       2 (wheel_speed[2])
+        1       |       0 (wheel_speed[0])
                 |
                 |
        ---------|---------> Y
                 |
                 |
-        0       |       1
+        2       |       3
     */
     void Chassis::decomposition_speed() {
         if (robot_set->mode != Types::ROBOT_MODE::ROBOT_NO_FORCE) {
