@@ -39,7 +39,7 @@ namespace Chassis
     }
 
     /* chassis speed coordinate
-                ^ X
+                ^ X (forward)
         3       |       2 (wheel_speed[2])
                 |
                 |
