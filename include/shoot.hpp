@@ -25,7 +25,7 @@ namespace Shoot
         int back_time = 0;
 
         std::vector<Hardware::Motor> friction;
-        std::vector<Hardware::Motor> trigger;
+        Hardware::Motor trigger;
 
         std::shared_ptr<Robot::Robot_set> robot_set;
        private:
