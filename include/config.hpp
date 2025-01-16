@@ -30,7 +30,7 @@ namespace Config
     const typename Pid::Pid_config GIMBAL_YAW_ABSOLUTE_PID_CONFIG{
         12.0f,  // KP
         0.0f,   // KI
-        0.3f,   // KD
+        0.0f,   // KD
         10.0f,  // MAX_OUT
         0.0f,   // MAX_IOUT
     };
@@ -76,7 +76,7 @@ namespace Config
     };
 
     const typename Pid::Pid_config YAW_SPEED_PID_CONFIG{
-        4000.f,
+        4500.f,
         0.0f,
         0.f,
         20000.0f,
@@ -133,20 +133,20 @@ namespace Config
     constexpr fp32 CHASSIS_CONTROL_FREQUENCE = 500.0f;
 #define STAND
 #ifdef STAND
-    constexpr fp32 GIMBAL1_YAW_OFFSET_ECD = 3459;
-    constexpr fp32 GIMBAL1_PITCH_OFFSET_ECD = 2194;
+    constexpr fp32 GIMBAL1_YAW_OFFSET_ECD = 6064;
+    constexpr fp32 GIMBAL1_PITCH_OFFSET_ECD = 6162;
 
-    constexpr fp32 GIMBAL2_YAW_OFFSET_ECD = 3366;
+    constexpr fp32 GIMBAL2_YAW_OFFSET_ECD = 6121;
     constexpr fp32 GIMBAL2_PITCH_OFFSET_ECD = 3985;
 
-    constexpr fp32 GIMBAL3_YAW_OFFSET_ECD = 12289;
+    constexpr fp32 GIMBAL3_YAW_OFFSET_ECD = 47563;
     constexpr fp32 GIMBAL3_PITCH_OFFSET_ECD = 3985;
 #else
     constexpr fp32 GIMBAL_YAW_OFFSET_ECD = 5424;
     constexpr fp32 GIMBAL_PITCH_OFFSET_ECD = 618;
 #endif
 
-    constexpr uint32_t GIMBAL_INIT_STOP_TIME = 2000;
+    constexpr uint32_t GIMBAL_INIT_STOP_TIME = 1500;
     constexpr fp32 GIMBAL_INIT_EXP = 0.1f;
 
     constexpr fp32 FRICTION_MAX_SPEED = 4850.f;

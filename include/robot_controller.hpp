@@ -54,6 +54,7 @@ namespace Robot
         Hardware::Can_interface can0;
         Hardware::Can_interface can1;
         Hardware::Can_interface can2;
+        Hardware::Can_interface can3;
         Hardware::Serial_interface<Types::ReceivePacket> *ser1;
         Hardware::Serial_interface<Types::ReceivePacket> *ser2;
         Hardware::Serial_interface<Types::ReceivePacket> *ser3;

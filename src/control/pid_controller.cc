@@ -49,7 +49,7 @@ namespace Pid
         out = 0;
     }
 
-    Pid_rad::Pid_rad(const Pid_config &config) : Pid_config(config), ramp(10, 1.f / 1000) {
+    Pid_rad::Pid_rad(const Pid_config &config) : Pid_config(config), ramp(25, 1.f / 1000) {
     }
 
     void Pid_rad::calc(fp32 get, fp32 set) {

@@ -26,6 +26,7 @@ typedef enum
     CAN0 = 0,
     CAN1,
     CAN2,
+    CAN3,
     SER1,
     SER2,
     SER3,

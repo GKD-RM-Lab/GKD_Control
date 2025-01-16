@@ -46,7 +46,7 @@ namespace Hardware
 
         while (iter != devices_found.end()) {
             serial::PortInfo device = *iter++;
-            LOG_INFO("(%s, %s, %s)\n", device.port.c_str(), device.description.c_str(), device.hardware_id.c_str());
+            //LOG_INFO("(%s, %s, %s)\n", device.port.c_str(), device.description.c_str(), device.hardware_id.c_str());
         }
     }
 

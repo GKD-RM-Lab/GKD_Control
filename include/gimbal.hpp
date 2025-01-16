@@ -28,6 +28,7 @@ namespace Gimbal
         fp32 init_yaw_set = 0.f;
         fp32 init_pitch_set = 0.f;
         fp32 yaw_gyro = 0.f;
+        fp32 yaw_abs = 0.f;
         fp32 pitch_gyro = 0.f;
 
         std::shared_ptr<Robot::Robot_set> robot_set;

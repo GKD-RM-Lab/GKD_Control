@@ -1,4 +1,5 @@
 #include "shoot.hpp"
+#include "hardware.hpp"
 
 namespace Shoot
 {
@@ -10,16 +11,12 @@ namespace Shoot
 
     void Shoot::init(const std::shared_ptr<Robot::Robot_set> &robot) {
         robot_set = robot;
-        for (int i = 0; i < friction.size(); i++) {
-            auto &mot = friction[i];
-            Robot::hardware->register_callback<CAN0>(
-                0x201 + i, [&mot](const auto &frame) { return mot.unpack(frame); });
-        }
-        for (int i = 0; i < trigger.size(); i++) {
-            auto &mot = trigger[i];
-            Robot::hardware->register_callback<CAN0>(
-                0x205 + i, [&mot](const auto &frame) { return mot.unpack(frame); });
-        }
+        Robot::hardware->register_callback<CAN0>(0x201, [&](const auto &frame) { friction[0].unpack(frame); });
+        Robot::hardware->register_callback<CAN0>(0x202, [&](const auto &frame) { friction[1].unpack(frame); });
+        Robot::hardware->register_callback<CAN1>(0x201, [&](const auto &frame) { friction[2].unpack(frame); });
+        Robot::hardware->register_callback<CAN1>(0x202, [&](const auto &frame) { friction[3].unpack(frame); });
+        Robot::hardware->register_callback<CAN3>(0x201, [&](const auto &frame) { trigger[0].unpack(frame); });
+        Robot::hardware->register_callback<CAN3>(0x202, [&](const auto &frame) { trigger[1].unpack(frame); });
     }
 
     void Shoot::update_speed() {
@@ -53,10 +50,11 @@ namespace Shoot
                 trigger_speed = trigger[1].speed_set = robot_set->shoot_open ? Config::CONTINUE_TRIGGER_SPEED : 0.f;
             }
         }
+
         friction[0].speed_set = -friction_ramp.out;
         friction[1].speed_set = friction_ramp.out;
-        friction[2].speed_set = friction_ramp.out;
-        friction[3].speed_set = -friction_ramp.out;
+        friction[2].speed_set = -friction_ramp.out;
+        friction[3].speed_set = friction_ramp.out;
         for(auto & mot : trigger) {
             mot.speed_set = trigger_speed;
         }
@@ -75,6 +73,7 @@ namespace Shoot
                     mot.pid_ctrler.calc(mot.speed, mot.speed_set);
                     mot.give_current = (int16_t)mot.pid_ctrler.out;
                 }
+								printf("\n");
             }
             if(robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE || !robot_set->shoot_open) {
                 for(auto & mot : trigger) {
@@ -87,8 +86,10 @@ namespace Shoot
                     mot.give_current = (int16_t)mot.pid_ctrler.out;
                 }
             }
-            Robot::hardware->send<CAN0>(Hardware::get_frame(0x200, friction));
-            Robot::hardware->send<CAN0>(Hardware::get_frame(0x1FF, trigger));
+
+						Robot::hardware->send<CAN0>(Hardware::get_frame(0x200, friction[0], friction[1]));
+						Robot::hardware->send<CAN1>(Hardware::get_frame(0x200, friction[2], friction[3]));
+						Robot::hardware->send<CAN3>(Hardware::get_frame(0x200, trigger));
             UserLib::sleep_ms(Config::SHOOT_CONTROL_TIME);
         }
     }

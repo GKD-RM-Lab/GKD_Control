@@ -28,6 +28,7 @@ LDFLAGS += -lm -lpthread -ldl -lrt -lserial
 #LDFLAGS = `pkg-config sdl --libs`
 
 SRC = $(wildcard src/*.cc) $(wildcard src/**/*.cc)
+INC = $(wildcard include/*.cc) $(wildcard include/**/*.cc)
 OBJ = $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(basename $(SRC))))
 BIN = rx78-2
 
@@ -55,8 +56,8 @@ clean-build: clean
 	@make all -j8
 
 mini-pc:
-	@sudo docker exec --workdir /home/zzlinus/dev/cpp/NeoRMControl_OneForALL fc54835e2a55 make clean-build
-	sshpass -p 1 scp build/rx78-2 gkd@192.168.0.114:/home/gkd/dev
+	@sudo docker exec --workdir /home/zzlinus/dev/cpp/NeoRMControl_OneForALL 6a8926eef4b2 make clean-build
+	sshpass -p 1 scp build/rx78-2 gkd@192.168.0.112:/home/gkd/dev
 
 mini-pc-os-deps:
 	sshpass -p 1 ssh root@192.168.0.114 "ip link set CAN_LEFT_HEAD up type can bitrate 1000000"
@@ -64,14 +65,14 @@ mini-pc-os-deps:
 	sshpass -p 1 ssh root@192.168.0.114 "ip link set CAN_CHASSIS up type can bitrate 1000000"
 	sshpass -p 1 ssh root@192.168.0.114 "chmod 666 /dev/IMU_LEFT"
 	sshpass -p 1 ssh root@192.168.0.114 "chmod 666 /dev/IMU_RIGHT"
-	sshpass -p 1 ssh root@192.168.0.114 "chmod 666 /dev/IMU_BIG_YAW"
+	#sshpass -p 1 ssh root@192.168.0.114 "chmod 666 /dev/IMU_BIG_YAW"
 
 serial: $(SERIAL_DIR)
 	@$(MAKE) -C $< -j8
 	@echo -e + $(BLUE)MV$(END) $(SERIAL_DIR)/build/libserial.a $(THIRD_PARTY_LIB_DIR)
 	@mv $(SERIAL_DIR)/build/libserial.a $(THIRD_PARTY_LIB_DIR)
 
-$(BIN): $(OBJ) serial
+$(BIN): $(OBJ) serial $(INC)
 	@echo -e + $(GREEN)LN$(END) $(BUILD_DIR)/$(BIN)
 	@$(CC) -o $(BUILD_DIR)/$(BIN) $(OBJ) $(CPPFLAGS) $(LDFLAGS)
 
