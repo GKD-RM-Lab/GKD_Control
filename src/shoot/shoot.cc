@@ -5,7 +5,7 @@ namespace Shoot
 
     Shoot::Shoot() : friction_ramp(Config::FRICTION_ADD_SPEED, Config::SHOOT_CONTROL_TIME * 1e-3f) {
         friction.assign(Config::FRICTION_NUM, Hardware::Motor{ Config::FRIC_SPEED_PID_CONFIG });
-        trigger.assign(Config::TRIGGER_NUM, Hardware::Motor{ Config::TRIGGER_SPEED_PID_CONFIG });
+        trigger(Config::TRIGGER_SPEED_PID_CONFIG);
     }
 
     void Shoot::init(const std::shared_ptr<Robot::Robot_set> &robot) {
@@ -22,9 +22,7 @@ namespace Shoot
         for (auto &m : friction) {
             m.speed = m.motor_measure.speed_rpm;
         }
-        for (auto &m : trigger) {
-            m.speed = Config::SHOOT_MOTOR_RPM_TO_SPEED * (fp32)m.motor_measure.speed_rpm;
-        }
+            trigger.speed = Config::SHOOT_MOTOR_RPM_TO_SPEED * (fp32)m.motor_measure.speed_rpm;
     }
 
     void Shoot::decomposition_speed() {
@@ -50,9 +48,7 @@ namespace Shoot
         }
         friction[0].speed_set = -friction_ramp.out;
         friction[1].speed_set = friction_ramp.out;
-        friction[2].speed_set = friction_ramp.out;
-        friction[3].speed_set = -friction_ramp.out;
-
+        
         trigger.speed_set = trigger_speed;
     }
 

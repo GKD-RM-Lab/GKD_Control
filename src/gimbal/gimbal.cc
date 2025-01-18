@@ -15,8 +15,8 @@ namespace Gimbal
     void Gimbal::init(const std::shared_ptr<Robot::Robot_set> &robot) {
         robot_set = robot;
 
-        Robot::hardware->register_callback<CAN0>(0x205, [&](const auto &frame) { yaw_motor.unpack(frame); });
-        Robot::hardware->register_callback<CAN0>(0x206, [&](const auto &frame) { pitch_motor.unpack(frame); });
+        Robot::hardware->register_callback<CAN1>(0x205, [&](const auto &frame) { yaw_motor.unpack(frame); });
+        Robot::hardware->register_callback<CAN0>(0x205, [&](const auto &frame) { pitch_motor.unpack(frame); });
     }
 
     void Gimbal::init_task() {
@@ -49,7 +49,8 @@ namespace Gimbal
                 init_stop_times = 0;
             }
             inited = init_stop_times >= Config::GIMBAL_INIT_STOP_TIME;
-            Robot::hardware->send<CAN0>(Hardware::get_frame(0x1FF, yaw_motor, pitch_motor));
+            Robot::hardware->send<CAN1>(Hardware::get_frame(0x1FF, yaw_motor));
+            Robot::hardware->send<CAN0>(Hardware::get_frame(0x1FF, pitch_motor));
             UserLib::sleep_ms(Config::GIMBAL_CONTROL_TIME);
         }
     }

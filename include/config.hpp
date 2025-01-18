@@ -93,8 +93,8 @@ namespace Config
     };
     /** shoot config **/
 
-    constexpr uint32_t FRICTION_NUM = 4;
-    constexpr uint32_t TRIGGER_NUM = 2;
+    constexpr uint32_t FRICTION_NUM = 2;
+    // constexpr uint32_t TRIGGER_NUM = 1;
 
     constexpr fp32 GIMBAL_INIT_YAW_SPEED = 0.005f;
     constexpr fp32 GIMBAL_INIT_PITCH_SPEED = 0.004f;
