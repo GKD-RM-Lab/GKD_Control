@@ -3,9 +3,10 @@
 namespace Shoot
 {
 
-    Shoot::Shoot() : friction_ramp(Config::FRICTION_ADD_SPEED, Config::SHOOT_CONTROL_TIME * 1e-3f) {
+    Shoot::Shoot() :
+    friction_ramp(Config::FRICTION_ADD_SPEED, Config::SHOOT_CONTROL_TIME * 1e-3f),
+    trigger(Config::TRIGGER_SPEED_PID_CONFIG) {
         friction.assign(Config::FRICTION_NUM, Hardware::Motor{ Config::FRIC_SPEED_PID_CONFIG });
-        trigger(Config::TRIGGER_SPEED_PID_CONFIG);
     }
 
     void Shoot::init(const std::shared_ptr<Robot::Robot_set> &robot) {
@@ -15,14 +16,14 @@ namespace Shoot
             Robot::hardware->register_callback<CAN0>(
                 0x201 + i, [&mot](const auto &frame) { return mot.unpack(frame); });
         }
-        Robot::hardware->register_callback<CAN0>(0x203, [&mot](const auto &frame) { trigger.unpack(frame); });
+        Robot::hardware->register_callback<CAN0>(0x203, [&](const auto &frame) { trigger.unpack(frame); });
     }
 
     void Shoot::update_speed() {
         for (auto &m : friction) {
             m.speed = m.motor_measure.speed_rpm;
         }
-            trigger.speed = Config::SHOOT_MOTOR_RPM_TO_SPEED * (fp32)m.motor_measure.speed_rpm;
+            trigger.speed = Config::SHOOT_MOTOR_RPM_TO_SPEED * (fp32)trigger.motor_measure.speed_rpm;
     }
 
     void Shoot::decomposition_speed() {
@@ -72,7 +73,7 @@ namespace Shoot
                 trigger.pid_ctrler.calc(trigger.speed, trigger.speed_set);
                 trigger.give_current = (int16_t)trigger.pid_ctrler.out;
             }
-            Robot::hardware->send<CAN0>(Hardware::get_frame(0x200, friction, trigger));
+            Robot::hardware->send<CAN0>(Hardware::get_frame(0x200, friction[0], friction[1], trigger));
             UserLib::sleep_ms(Config::SHOOT_CONTROL_TIME);
         }
     }

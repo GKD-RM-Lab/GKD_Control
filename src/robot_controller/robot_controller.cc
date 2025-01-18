@@ -13,8 +13,8 @@ namespace Robot
     void Robot_ctrl::start_init() {
         imu.init(robot_set);
         cv_controller_.init(robot_set);
-        chassis.init(robot_set);
-        gimbal.init(robot_set);
+        // chassis.init(robot_set);
+        // gimbal.init(robot_set);
         shoot.init(robot_set);
         while (imu.offline()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -23,29 +23,29 @@ namespace Robot
     }
 
     void Robot_ctrl::init_join() const {
-        if (gimbal_init_thread != nullptr) {
-            gimbal_init_thread->join();
-        }
+        // if (gimbal_init_thread != nullptr) {
+        //     gimbal_init_thread->join();
+        // }
     }
 
     void Robot_ctrl::start() {
-        chassis_thread = std::make_unique<std::thread>(&Chassis::Chassis::task, &chassis);
-        gimbal_thread = std::make_unique<std::thread>(&Gimbal::Gimbal::task, &gimbal);
+        // chassis_thread = std::make_unique<std::thread>(&Chassis::Chassis::task, &chassis);
+        // gimbal_thread = std::make_unique<std::thread>(&Gimbal::Gimbal::task, &gimbal);
         shoot_thread = std::make_unique<std::thread>(&Shoot::Shoot::task, &shoot);
 
-        vision_thread = std::make_unique<std::thread>(&Device::Cv_controller::task, &cv_controller_);
+        // vision_thread = std::make_unique<std::thread>(&Device::Cv_controller::task, &cv_controller_);
     }
 
     void Robot_ctrl::join() const {
-        if (hardware != nullptr) {
-            hardware->join();
-        }
-        if (chassis_thread != nullptr) {
-            chassis_thread->join();
-        }
-        if (gimbal_thread != nullptr) {
-            gimbal_thread->join();
-        }
+        // if (hardware != nullptr) {
+        //     hardware->join();
+        // }
+        // if (chassis_thread != nullptr) {
+        //     chassis_thread->join();
+        // }
+        // if (gimbal_thread != nullptr) {
+        //     gimbal_thread->join();
+        // }
     }
 
     void Robot_ctrl::load_hardware() {
