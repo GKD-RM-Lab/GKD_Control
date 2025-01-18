@@ -39,6 +39,7 @@ namespace Io
                     MSG_CONFIRM,
                     (const struct sockaddr *)&clients.find(it->second)->second,
                     sizeof(clients.find(it->second)->second));
+                //LOG_OK("send to client %d bytes\n", n);
             }
         }
 

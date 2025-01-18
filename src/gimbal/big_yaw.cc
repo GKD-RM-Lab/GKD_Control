@@ -32,6 +32,7 @@ namespace Gimbal
 						//    yaw_motor.speed_set);
 
             robot_set->gimbal3_yaw_set = robot_set->gyro3_ins_yaw;
+            robot_set->gimbal3_yaw_offset= robot_set->gyro3_ins_yaw;
             if (fabs(robot_set->gimbal3_yaw_relative) < Config::GIMBAL_INIT_EXP) {
                 init_stop_times += 1;
             }

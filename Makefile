@@ -56,7 +56,7 @@ clean-build: clean
 	@make all -j8
 
 mini-pc:
-	@sudo docker exec --workdir /home/zzlinus/dev/cpp/NeoRMControl_OneForALL 6a8926eef4b2 make clean-build
+	@sudo docker exec --workdir /home/zzlinus/dev/cpp/NeoRMControl_OneForALL a30b5228ace8 make clean-build
 	sshpass -p 1 scp build/rx78-2 gkd@192.168.0.112:/home/gkd/dev
 
 mini-pc-os-deps:

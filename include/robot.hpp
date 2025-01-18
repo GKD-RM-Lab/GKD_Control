@@ -58,10 +58,11 @@ namespace Robot
 
         fp32 gimbal2_yaw_relative = 0.f;
         fp32 gimbal2_pitch_relative = 0.f;
+        fp32 gimbal2_yaw_abs= 0.f;
 
         fp32 gimbal3_yaw_relative = 0.f;
         fp32 gimbal3_pitch_relative = 0.f;
-
+				bool solver_successful;
         fp32 aimx;
         fp32 aimy;
         fp32 aimz;
