@@ -38,15 +38,14 @@ namespace Shoot
             trigger_speed = 0.f;
         } else {
             friction_ramp.update(robot_set->friction_open ? Config::FRICTION_MAX_SPEED : 0.f);
-            if(back_time) {
+            if (back_time) {
                 back_time--;
                 trigger_speed = robot_set->shoot_open ? -Config::CONTINUE_TRIGGER_SPEED : 0.f;
-            }
-            else {
-                if(isJam()) {
+            } else {
+                if (isJam()) {
                     jam_time++;
                 }
-                if(jam_time > 500) {
+                if (jam_time > 500) {
                     back_time = 1000;
                     jam_time = 0;
                 }
@@ -57,17 +56,17 @@ namespace Shoot
         friction[1].speed_set = friction_ramp.out;
         friction[2].speed_set = friction_ramp.out;
         friction[3].speed_set = -friction_ramp.out;
-        for(auto & mot : trigger) {
+        for (auto &mot : trigger) {
             mot.speed_set = trigger_speed;
         }
     }
 
     [[noreturn]] void Shoot::task() {
-        while(true) {
+        while (true) {
             update_speed();
             decomposition_speed();
-            if(robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
-                for(auto & mot : friction) {
+            if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
+                for (auto &mot : friction) {
                     mot.give_current = 0;
                 }
             } else {
@@ -76,12 +75,11 @@ namespace Shoot
                     mot.give_current = (int16_t)mot.pid_ctrler.out;
                 }
             }
-            if(robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE || !robot_set->shoot_open) {
-                for(auto & mot : trigger) {
+            if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE || !robot_set->shoot_open) {
+                for (auto &mot : trigger) {
                     mot.give_current = 0;
                 }
-            }
-            else {
+            } else {
                 for (auto &mot : trigger) {
                     mot.pid_ctrler.calc(mot.speed, mot.speed_set);
                     mot.give_current = (int16_t)mot.pid_ctrler.out;
@@ -94,7 +92,7 @@ namespace Shoot
     }
 
     bool Shoot::isJam() {
-        return (trigger[0].give_current > 4000) && (trigger[1].give_current > 4000) &&
-               (trigger[0].speed < 1.f) && (trigger[1].speed < 1.f);
+        return (trigger[0].give_current > 4000) && (trigger[1].give_current > 4000) && (trigger[0].speed < 1.f) &&
+               (trigger[1].speed < 1.f);
     }
 }  // namespace Shoot
