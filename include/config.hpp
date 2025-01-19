@@ -28,7 +28,7 @@ namespace Config
     //TODO Adjust PID parameters
     /** GIMBAL **/
     const typename Pid::Pid_config GIMBAL_YAW_ABSOLUTE_PID_CONFIG{
-        12.0f,  // KP
+        10.0f,  // KP
         0.0f,   // KI
         0.0f,   // KD
         10.0f,  // MAX_OUT
@@ -44,15 +44,15 @@ namespace Config
     };
 
     const typename Pid::Pid_config GIMBAL_PITCH_ABSOLUTE_PID_CONFIG{
-        15.0f,  // KP
+        7.0f,  // KP
         0.0f,   // KI
-        10.0f,   // KD
+        .3f,   // KD
         10.0f,  // MAX_OUT
         0.0f,   // MAX_IOUT
     };
 
     const typename Pid::Pid_config GIMBAL_YAW_RELATIVE_PID_CONFIG{
-        15.0f,
+        9.0f,
         0.0f,
         0.3f,
         10.0f,
@@ -68,7 +68,7 @@ namespace Config
     };
 
     const typename Pid::Pid_config GIMBAL_PITCH_RELATIVE_PID_CONFIG{
-        12.0f,
+        1.0f,
         0.0f,
         0.0f,
         10.0f,
@@ -76,7 +76,7 @@ namespace Config
     };
 
     const typename Pid::Pid_config YAW_SPEED_PID_CONFIG{
-        4500.f,
+        5000.f,
         0.0f,
         0.f,
         20000.0f,
@@ -92,7 +92,7 @@ namespace Config
     };
 
     const typename Pid::Pid_config PITCH_SPEED_PID_CONFIG{
-        4500.0f,
+        4500.0f, //4500
         100.0f,
         0.0f,
         30000.0f,
@@ -117,8 +117,8 @@ namespace Config
     };
     /** shoot config **/
 
-    constexpr uint32_t FRICTION_NUM = 4;
-    constexpr uint32_t TRIGGER_NUM = 2;
+    constexpr uint32_t FRICTION_NUM = 2;
+    // constexpr uint32_t TRIGGER_NUM = 1;
 
     constexpr fp32 GIMBAL_INIT_YAW_SPEED = 0.005f;
     constexpr fp32 GIMBAL_INIT_PITCH_SPEED = 0.004f;
@@ -133,7 +133,7 @@ namespace Config
     constexpr fp32 CHASSIS_CONTROL_FREQUENCE = 500.0f;
 #define STAND
 #ifdef STAND
-    constexpr fp32 GIMBAL1_YAW_OFFSET_ECD = 6064;
+    constexpr fp32 GIMBAL1_YAW_OFFSET_ECD = 5251;
     constexpr fp32 GIMBAL1_PITCH_OFFSET_ECD = 6162;
 
     constexpr fp32 GIMBAL2_YAW_OFFSET_ECD = 6121;

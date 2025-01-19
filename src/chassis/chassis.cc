@@ -12,7 +12,7 @@ namespace Chassis
         robot_set = robot;
         for (size_t i = 0; i < motors.size(); i++) {
             auto &mot = motors[i];
-            Robot::hardware->register_callback<CAN2>(0x201 + i, [&mot](const auto &frame) { mot.unpack(frame); });
+            Robot::hardware->register_callback<CAN1>(0x201 + i, [&mot](const auto &frame) { mot.unpack(frame); });
         }
     }
 
@@ -42,7 +42,7 @@ namespace Chassis
                 }
             }
 
-            Robot::hardware->send<CAN2>(Hardware::get_frame(0x200, motors));
+            Robot::hardware->send<CAN1>(Hardware::get_frame(0x200, motors));
             UserLib::sleep_ms(Config::CHASSIS_CONTROL_TIME);
         }
     }
@@ -63,6 +63,7 @@ namespace Chassis
         }
 
         wheel_speed[0] = -vx_set + vy_set + wz_set;
+        // wheel_speed[0] = 1;
         wheel_speed[1] = vx_set + vy_set + wz_set;
         wheel_speed[2] = vx_set - vy_set + wz_set;
         wheel_speed[3] = -vx_set - vy_set + wz_set;
