@@ -54,16 +54,17 @@ namespace Config
         .yaw_rate_pid_config = {
             .kp =           16668.f,
             .ki =           234.f,
-            .kd =           0.f,
-            .max_out =      20000.0f,
-            .max_iout =     5000.0f,
+            .kd =           200.f,
+            .max_out =      30000.0f,
+            .max_iout =     15000.0f,
         },
+                //PITCH SPEED PID 科学调参OK 3.17
         .pitch_rate_pid_config = {
-            .kp =           5500.0f,
-            .ki =           100.0f,
+            .kp =           9073.0f,
+            .ki =           283.0f,
             .kd =           0.0f,
             .max_out =      30000.0f,
-            .max_iout =     5000.0f,
+            .max_iout =     10000.0f,
         },
 				// PID POSITION RELATIVE
         .yaw_relative_pid_config ={
@@ -75,17 +76,18 @@ namespace Config
         },
 				// PID POSITION ABSOLUTE 科学调参ok 3.17
         .yaw_absolute_pid_config = {
-            .kp =           8.32f,
-            .ki =           0.017f,
+            .kp =           5.0f,
+            .ki =           0.062f,
             .kd =           0.0f,
-            .max_out =      30.0f,
+            .max_out =      60.0f,
             .max_iout =     0.0f,
         },
+                //PID PITCH POSITION
         .pitch_absolute_pid_config = {
-            .kp =           15.0f,
+            .kp =           13.45f,
             .ki =           0.0f,
-            .kd =           10.0f,
-            .max_out =      10.0f,
+            .kd =           0.0f,
+            .max_out =      30.0f,
             .max_iout =     0.0f,
         },
         .gimbal_motor_dir = 1.0,
@@ -206,7 +208,7 @@ namespace Config
 #endif
 
     constexpr uint32_t GIMBAL_INIT_STOP_TIME = 2000;
-    constexpr fp32 GIMBAL_INIT_EXP = 0.2f;
+    constexpr fp32 GIMBAL_INIT_EXP = 0.1f;
 
     constexpr fp32 FRICTION_MAX_SPEED = 3.7f;
     constexpr fp32 FRICTION_ADD_SPEED = 1.0f;
