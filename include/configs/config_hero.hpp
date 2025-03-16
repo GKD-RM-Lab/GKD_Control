@@ -64,7 +64,7 @@ namespace Config
             .ki =           283.0f,
             .kd =           0.0f,
             .max_out =      30000.0f,
-            .max_iout =     10000.0f,
+            .max_iout =     5000.0f,
         },
 				// PID POSITION RELATIVE
         .yaw_relative_pid_config ={
@@ -76,7 +76,7 @@ namespace Config
         },
 				// PID POSITION ABSOLUTE 科学调参ok 3.17
         .yaw_absolute_pid_config = {
-            .kp =           5.0f,
+            .kp =           8.0f,
             .ki =           0.062f,
             .kd =           0.0f,
             .max_out =      60.0f,
@@ -87,7 +87,7 @@ namespace Config
             .kp =           13.45f,
             .ki =           0.0f,
             .kd =           0.0f,
-            .max_out =      30.0f,
+            .max_out =      10.0f,
             .max_iout =     0.0f,
         },
         .gimbal_motor_dir = 1.0,
@@ -102,7 +102,7 @@ namespace Config
                 2000.f,       // KP
                 0.05f,     // KI
                 10.0f,     // KD
-                16000.0f,  // MAX_OUT
+                5000.0f,  // MAX_OUT
                 2000.0f,   // MAX_IOUT
             },
             .trigger_speed_pid_config = Pid::PidConfig{
@@ -210,7 +210,7 @@ namespace Config
     constexpr uint32_t GIMBAL_INIT_STOP_TIME = 2000;
     constexpr fp32 GIMBAL_INIT_EXP = 0.1f;
 
-    constexpr fp32 FRICTION_MAX_SPEED = 3.7f;
+    constexpr fp32 FRICTION_MAX_SPEED = 2.3f;
     constexpr fp32 FRICTION_ADD_SPEED = 1.0f;
     constexpr fp32 CONTINUE_TRIGGER_SPEED = 9.f;
 

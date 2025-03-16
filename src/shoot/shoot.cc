@@ -45,7 +45,7 @@ namespace Shoot
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE || !robot_set->shoot_open) {
                 trigger.set(0);
             } else {
-                trigger.set(4);
+                trigger.set(7);
             }
             UserLib::sleep_ms(Config::SHOOT_CONTROL_TIME);
         }
