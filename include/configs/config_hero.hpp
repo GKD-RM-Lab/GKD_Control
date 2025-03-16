@@ -50,9 +50,10 @@ namespace Config
         .imu_serial_port = "/dev/IMU_HERO",
         .yaw_motor_config = Hardware::DJIMotorConfig(6020, "Hero_Gimbal", 1),
         .pitch_motor_config = Hardware::DJIMotorConfig(6020, "Hero_Gimbal", 2),
+				// PID SPEED 科学调参OK 3.17
         .yaw_rate_pid_config = {
-            .kp =           8000.f,
-            .ki =           0.0f,
+            .kp =           16668.f,
+            .ki =           234.f,
             .kd =           0.f,
             .max_out =      20000.0f,
             .max_iout =     5000.0f,
@@ -64,6 +65,7 @@ namespace Config
             .max_out =      30000.0f,
             .max_iout =     5000.0f,
         },
+				// PID POSITION RELATIVE
         .yaw_relative_pid_config ={
             .kp =           10.0f,
             .ki =           0.0f,
@@ -71,11 +73,12 @@ namespace Config
             .max_out =      10.0f,
             .max_iout =     0.0f,
         },
+				// PID POSITION ABSOLUTE 科学调参ok 3.17
         .yaw_absolute_pid_config = {
-            .kp =           12.0f,
-            .ki =           0.0f,
-            .kd =           0.3f,
-            .max_out =      10.0f,
+            .kp =           8.32f,
+            .ki =           0.017f,
+            .kd =           0.0f,
+            .max_out =      30.0f,
             .max_iout =     0.0f,
         },
         .pitch_absolute_pid_config = {
@@ -203,7 +206,7 @@ namespace Config
 #endif
 
     constexpr uint32_t GIMBAL_INIT_STOP_TIME = 2000;
-    constexpr fp32 GIMBAL_INIT_EXP = 0.1f;
+    constexpr fp32 GIMBAL_INIT_EXP = 0.2f;
 
     constexpr fp32 FRICTION_MAX_SPEED = 3.7f;
     constexpr fp32 FRICTION_ADD_SPEED = 1.0f;
