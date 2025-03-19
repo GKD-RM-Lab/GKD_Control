@@ -18,6 +18,7 @@ namespace Chassis
         robot_set = robot;
 
         power_manager.init(robot);
+        power_manager.setMode(1);
 
         chassis_angle_pid = Pid::PidRad(
                                 config.chassis_follow_gimbal_pid_config,
@@ -31,6 +32,11 @@ namespace Chassis
             motor.setCtrl(Pid::PidPosition(
                 config.wheel_speed_pid_config, motor.data_.output_linear_velocity));
             motor.enable();
+        }
+
+        for (int i = 0; i < 4; i++) {
+            wheels_pid[i] = Pid::PidPosition(
+                config.wheel_speed_pid_config, motors[i].data_.output_linear_velocity);
         }
     }
 
@@ -53,19 +59,28 @@ namespace Chassis
                         wheel_speed[i] *= speed_rate;
                     }
                 }
+
                 for (int i = 0; i < 4; i++) {
-                    motors[i].set(wheel_speed[i]);
+                    wheels_pid[i].set(wheel_speed[i]);
                 }
 
                 // Power Limit
                 for (int i = 0; i < 4; ++i) {
                     objs[i].curAv = motors[i].motor_measure_.speed_rpm * M_PIf / 30;
-                    objs[i].pidOutput = motors[i].give_current;
+                    objs[i].pidOutput = wheels_pid[i].out;
                     objs[i].setAv = wheel_speed[i];
                     objs[i].pidMaxOutput = 14000;
                 }
                 static Power::PowerObj *pObjs[4] = { &objs[0], &objs[1], &objs[2], &objs[3] };
-                power_manager.getControlledOutput(pObjs);
+                float *cmd_power = power_manager.getControlledOutput(pObjs);
+
+                for (int i = 0; i < 4; ++i) {
+                    motors[i].give_current = cmd_power[i];
+                }
+
+                // for (int i = 0; i < 4; ++i) {
+                //     motors[i].give_current = wheels_pid[i].out;
+                // }
             }
             UserLib::sleep_ms(config.ControlTime);
         }

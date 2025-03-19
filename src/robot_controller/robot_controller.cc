@@ -26,7 +26,8 @@ namespace Robot
         // cv_controller_.init(robot_set);
         rc_controller.init(robot_set);
         referee.init(robot_set);
-        IFNDEF(CONFIG_SENTRY, super_cap.init(Config::super_cap_can_interface, robot_set));
+        IFNDEF(CONFIG_SENTRY, super_cap.init(Config::super_cap_can_interface, robot_set);
+               super_cap.set(true, 30));
 
         chassis.init(robot_set);
         gimbal.init(robot_set);

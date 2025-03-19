@@ -32,7 +32,8 @@ namespace Device
     }
 
     void M9025::enable() {
-        IO::io<CAN>[can_name] -> register_callback_key(0x140 + id, [&](const can_frame& frame) { unpack(frame); });
+        IO::io<CAN>[can_name] -> register_callback_key(
+                                  0x140 + id, [&](const can_frame& frame) { unpack(frame); });
     }
 
 }  // namespace Device

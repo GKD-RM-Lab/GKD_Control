@@ -1,3 +1,4 @@
+#!/sbin/python3
 import matplotlib.pyplot as plt
 
 # 初始化存储数据的列表
@@ -5,7 +6,7 @@ y_values_1 = []
 y_values_2 = []
 
 # 读取文件
-file_path = 'log2.txt'  # 请修改为实际文件路径
+file_path = 'log8.txt'  # 请修改为实际文件路径
 with open(file_path, 'r') as file:
     for line_number, line in enumerate(file, start=1):
         # 跳过空行

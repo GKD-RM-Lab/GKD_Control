@@ -1,6 +1,9 @@
 #include <algorithm>
+#include <fstream>
+#include <iostream>
 #include <thread>
 
+#include "pid_controller.hpp"
 #include "power_controller.hpp"
 
 namespace Power
@@ -82,7 +85,7 @@ namespace Power
     }
 
     void Manager::setMode(uint8_t mode) {
-        setMaxPowerConfigured(mode == 1 ? powerUpperLimit : refereeMaxPower);
+        setMaxPowerConfigured(mode == 1 ? powerUpperLimit : powerLowerLimit);
     }
 
     /**
@@ -123,12 +126,13 @@ namespace Power
             }
         }
 
-        // LOG_INFO(
-        //     "sum power %d %f %f %f\n",
-        //     robot_set->super_cap_info.capEnergy,
-        //     measuredPower,
-        //     estimatedPower,
-        //     sumCmdPower);
+        LOG_INFO(
+            "sum power: %f, Max power: %f, Measured: %f, CapEnergy: %d\n",
+            sumCmdPower,
+            maxPower,
+            measuredPower,
+            robot_set->super_cap_info.capEnergy);
+
         //      update power status
         powerStatus.maxPowerLimited = maxPower;
         powerStatus.sumPowerCmd_before_clamp = sumCmdPower;
@@ -160,6 +164,7 @@ namespace Power
                     p->curAv * p->curAv - 4.0f * k2 *
                                               (k1 * fabs(p->curAv) + k3 / static_cast<float>(4) -
                                                powerWeight * allocatablePower);
+
                 if (floatEqual(delta, 0.0f))  // repeat roots
                 {
                     newTorqueCurrent[i] = -p->curAv / (2.0f * k2) / k0;
@@ -172,6 +177,7 @@ namespace Power
                 {
                     newTorqueCurrent[i] = -p->curAv / (2.0f * k2) / k0;
                 }
+
                 // WARN: Not sure about this clamp
                 // newTorqueCurrent[i] = Utils::Math::clamp(newTorqueCurrent[i], p->pidMaxOutput);
                 newTorqueCurrent[i] =
@@ -183,15 +189,21 @@ namespace Power
             }
         }
 
-#if USE_DEBUG
-        newCmdPower = 0.0f;
+        // #if USE_DEBUG
+        float newCmdPower = 0.0f;
         for (int i = 0; i < 4; i++) {
             PowerObj *p = objs[i];
-            newCmdPower += newTorqueCurrent[i] * k0 * p->curAv + fabs(p->curAv) * manager.k1 +
-                           newTorqueCurrent[i] * k0 * newTorqueCurrent[i] * k0 * manager.k2 +
-                           manager.k3 / 4.0f;
+            newCmdPower += newTorqueCurrent[i] * k0 * p->curAv + fabs(p->curAv) * k1 +
+                           newTorqueCurrent[i] * k0 * newTorqueCurrent[i] * k0 * k2 + k3 / 4.0f;
         }
-#endif
+        // LOG_INFO(
+        //     "sumPower: %f, NewCMDPower power: %f, measuredPower: %f, capEnergy: %d %f\n",
+        //     sumPowerRequired,
+        //     newCmdPower,
+        //     robot_set->super_cap_info.chassisPower,
+        //     robot_set->super_cap_info.capEnergy,
+        //     refereeMaxPower);
+        //    #endif
 
         return newTorqueCurrent;
     }
@@ -200,6 +212,7 @@ namespace Power
         static Math::Matrixf<2, 1> samples;
         static Math::Matrixf<2, 1> params;
         static float effectivePower = 0;
+        std::ofstream outputFile("log.txt");
 
         isInitialized = true;
 
@@ -208,6 +221,7 @@ namespace Power
         lastUpdateTick = clock();
 
         while (true) {
+            setMode(1);
             float torqueConst = 0.3 * ((float)187 / 3591);
             float k0 =
                 torqueConst * 20 / 16384;  // torque current rate of the motor, defined as Nm/Output
@@ -252,8 +266,10 @@ namespace Power
                     fmax(1U, robot_set->referee_info.game_robot_status_data.robot_level);
 
             powerUpperLimit = refereeMaxPower + MAX_CAP_POWER_OUT;
+            // FIXME: referee leve to set lower limit
+            powerLowerLimit = 50;
 
-            MIN_MAXPOWER_CONFIGURED = refereeMaxPower * 0.8f;
+            MIN_MAXPOWER_CONFIGURED = 50 * 0.8;
 
             // energy loop
             // if cap and referee both gg, set the max power to latest power limit *
@@ -281,10 +297,32 @@ namespace Power
             // If cap is disconnected, get measured power from referee feedback if cap
             // energy is out Otherwise, set it to estimated power
             measuredPower = robot_set->super_cap_info.chassisPower;
+            // NOTE: log k1 k2 k3
             // LOG_INFO(
             //     "%f %f %f %f %f %f\n", measuredPower, effectivePower, estimatedPower, k1, k2,
             //     k3);
+
+            // NOTE: log PIDs
+            // LOG_INFO(
+            //    "%f, %f, %f, %f, %f %d\n",
+            //    sqrtf(baseBuffSet),
+            //    powerBuff,
+            //    refereeMaxPower,
+            //    powerPD_base.out,
+            //    baseMaxPower,
+            //    robot_set->super_cap_info.capEnergy);
+
+            // NOTE: log super_cat_info
+            // LOG_INFO(
+            //    "%d %f %d\n",
+            //    robot_set->super_cap_info.capEnergy,
+            //    robot_set->super_cap_info.chassisPower,
+            //    robot_set->super_cap_info.chassisPowerlimit);
+
+            // NOTE: for dumping log and draw purpose
             // printf("%f, %f\n", baseMaxPower, fullMaxPower);
+            // outputFile << refereeMaxPower << ", " << baseMaxPower << "\n" << std::flush;
+            outputFile << baseMaxPower << ", " << fullMaxPower << "\n" << std::flush;
 
             // update power status
             powerStatus.userConfiguredMaxPower = userConfiguredMaxPower;
@@ -323,9 +361,9 @@ namespace Power
         robot_set = robot;
         LATEST_FEEDBACK_JUDGE_ROBOT_LEVEL = division == Division::SENTRY ? 10U : 1U;
         MIN_MAXPOWER_CONFIGURED = 30.0f;
-        powerUpperLimit = CAP_OFFLINE_ENERGY_RUNOUT_POWER_THRESHOLD + MAX_CAP_POWER_OUT;
-        powerPD_base = Pid::PidRad(powerPD_base_pid_config, powerBuff);
-        powerPD_full = Pid::PidRad(powerPD_full_pid_config, powerBuff);
+        powerUpperLimit = CAP_OFFLINE_ENERGY_RUNOUT_POWER_THRESHOLD;
+        powerPD_base = Pid::PidPosition(powerPD_base_pid_config, powerBuff);
+        powerPD_full = Pid::PidPosition(powerPD_full_pid_config, powerBuff);
     }
 
 }  // namespace Power

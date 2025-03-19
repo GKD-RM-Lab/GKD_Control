@@ -71,8 +71,8 @@ clean-build: clean
 	@make all -j8
 
 to-minipc:
-	@sudo docker exec --workdir /home/zzlinus/dev/cpp/NeoRMControl_OneForALL a30b5228ace8 make infantry -j8
-	sshpass -p 1 scp build/rx78-2 gkd@192.168.1.204:/home/gkd/dev
+	@sudo docker exec --workdir /home/zzlinus/dev/cpp/NeoRMControl_OneForALL a30b5228ace8 make hero -j8
+	sshpass -p 1 scp build/rx78-2 fish@192.168.1.10:/home/fish/dev
 	#sshpass -p 1 ssh gkd@192.168.1.4 "/home/gkd/dev/rx78-2"
 
 serial: $(SERIAL_DIR)

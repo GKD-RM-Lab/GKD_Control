@@ -29,8 +29,8 @@ namespace Power
 
     constexpr static float refereeFullBuffSet = 60.0f;
     constexpr static float refereeBaseBuffSet = 50.0f;
-    constexpr static float capFullBuffSet = 230.0f;
-    constexpr static float capBaseBuffSet = 30.0f;
+    constexpr static float capFullBuffSet = 250.0f;
+    constexpr static float capBaseBuffSet = 100.0f;
     constexpr static float error_powerDistribution_set = 20.0f;
     constexpr static float prop_powerDistribution_set = 15.0f;
 
@@ -54,10 +54,12 @@ namespace Power
      * choose HP_FIRST chassis type conservatively, except for sentry
      */
     constexpr static uint8_t maxLevel = 10U;
-    constexpr static uint8_t HeroChassisPowerLimit_HP_FIRST[maxLevel] = { 55U, 60U, 65U, 70U,  75U,
-                                                                          80U, 85U, 90U, 100U, 120U };
-    constexpr static uint8_t InfantryChassisPowerLimit_HP_FIRST[maxLevel] = { 45U, 50U, 55U, 60U, 65U,
-                                                                              70U, 75U, 80U, 90U, 100U };
+    constexpr static uint8_t HeroChassisPowerLimit_HP_FIRST[maxLevel] = {
+        55U, 60U, 65U, 70U, 75U, 80U, 85U, 90U, 100U, 120U
+    };
+    constexpr static uint8_t InfantryChassisPowerLimit_HP_FIRST[maxLevel] = { 45U, 50U, 55U, 60U,
+                                                                              65U, 70U, 75U, 80U,
+                                                                              90U, 100U };
     constexpr static uint8_t SentryChassisPowerLimit = 100U;
 
     enum class Division
@@ -117,6 +119,7 @@ namespace Power
         float baseMaxPower;
 
         float powerUpperLimit;
+        float powerLowerLimit;
         float refereeMaxPower;
 
         float userConfiguredMaxPower;

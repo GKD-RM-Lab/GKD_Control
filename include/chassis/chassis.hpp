@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "chassis/chassis_config.hpp"
+#include "controller.hpp"
 #include "dji_motor.hpp"
 #include "pid_controller.hpp"
 #include "power_controller.hpp"
@@ -39,16 +40,19 @@ namespace Chassis
         ChassisConfig config;
         Power::Manager power_manager;
 
-        // chassis vertical speed, positive means forward,unit m/s. 底盘速度 前进方向 前为正，单位 m/s
+        // chassis vertical speed, positive means forward,unit m/s. 底盘速度 前进方向 前为正，单位
+        // m/s
         fp32 vx = 0.f;
         // chassis horizontal speed, positive means letf,unit m/s.底盘速度 左右方向 左为正  单位 m/s
         fp32 vy = 0.f;
-        // chassis rotation speed, positive means counterclockwise,unit rad/s.底盘旋转角速度，逆时针为正
+        // chassis rotation speed, positive means counterclockwise,unit
+        // rad/s.底盘旋转角速度，逆时针为正
         fp32 wz = 0.f;
         fp32 wheel_speed[4] = {};
 
         fp32 max_wheel_speed = 2.5f;
         ControllerList chassis_angle_pid;
+        ControllerList wheels_pid[4];
         Power::PowerObj objs[4];
 
         std::deque<Hardware::DJIMotor> motors;

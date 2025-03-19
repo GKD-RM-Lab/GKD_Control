@@ -45,28 +45,39 @@ namespace Device
         if (static_cast<bool>(base_.verifyCRC8CheckSum(rx_data, k_header_length_))) {
             if (frame_header.data_length > 256)  // temporary and inaccurate value
             {
-                printf("discard possible wrong frames, data length: %d\n", frame_header.data_length);
+                printf(
+                    "discard possible wrong frames, data length: %d\n", frame_header.data_length);
                 return 0;
             }
-            // printf("data len %x %d %x\n", frame_header.sof, frame_header.data_length, rx_data[6] << 8 | rx_data[5]);
-            frame_len = frame_header.data_length + k_header_length_ + k_cmd_id_length_ + k_tail_length_;
+            // printf("data len %x %d %x\n", frame_header.sof, frame_header.data_length, rx_data[6]
+            // << 8 | rx_data[5]);
+            frame_len =
+                frame_header.data_length + k_header_length_ + k_cmd_id_length_ + k_tail_length_;
             if (base_.verifyCRC16CheckSum(rx_data, frame_len) == 1) {
                 cmd_id = (rx_data[6] << 8 | rx_data[5]);
                 switch (cmd_id) {
                     case Referee::RefereeCmdId::GAME_STATUS_CMD: {
-                        memcpy(&robot_set->referee_info.game_status_data, rx_data + 7, sizeof(Referee::GameStatus));
+                        memcpy(
+                            &robot_set->referee_info.game_status_data,
+                            rx_data + 7,
+                            sizeof(Referee::GameStatus));
 
                         printf("game status\n");
                         break;
                     }
                     case Referee::RefereeCmdId::GAME_RESULT_CMD: {
-                        memcpy(&robot_set->referee_info.game_result_ref, rx_data + 7, sizeof(Referee::GameResult));
+                        memcpy(
+                            &robot_set->referee_info.game_result_ref,
+                            rx_data + 7,
+                            sizeof(Referee::GameResult));
                         printf("game result\n");
                         break;
                     }
                     case Referee::RefereeCmdId::REFEREE_WARNING_CMD: {
                         memcpy(
-                            &robot_set->referee_info.referee_warning_ref, rx_data + 7, sizeof(Referee::RefereeWarning));
+                            &robot_set->referee_info.referee_warning_ref,
+                            rx_data + 7,
+                            sizeof(Referee::RefereeWarning));
                         break;
                     }
                     case Referee::RefereeCmdId::ROBOT_STATUS_CMD: {
@@ -78,7 +89,10 @@ namespace Device
                         break;
                     }
                     case Referee::RefereeCmdId::POWER_HEAT_DATA_CMD: {
-                        memcpy(&robot_set->referee_info.power_heat_data, rx_data + 7, sizeof(Referee::PowerHeatData));
+                        memcpy(
+                            &robot_set->referee_info.power_heat_data,
+                            rx_data + 7,
+                            sizeof(Referee::PowerHeatData));
                         printf("power heat\n");
                         break;
                     }

@@ -17,7 +17,9 @@ namespace Config
 
     const std::vector<std::string> SocketInitList = { "AUTO_AIM_CONTROL" };
 
-    const std::vector<std::tuple<std::string, int, int>> SerialInitList = { { "/dev/IMU_HERO", 115200, 2000 } };
+    const std::vector<std::tuple<std::string, int, int>> SerialInitList = {
+        { "/dev/IMU_HERO", 115200, 2000 }
+    };
 
     const std::string rc_controller_serial = "/dev/IMU_HERO";
     const std::string super_cap_can_interface = "CAN_CHASSIS";
