@@ -28,6 +28,7 @@ namespace Gimbal
         fp32 yaw_gyro = 0.f;
         fp32 pitch_gyro = 0.f;
         fp32 yaw_relative = 0.f;
+        fp32 pitch_relative = 0.f;
         fp32 fake_yaw_abs;
 
         fp32* yaw_set;
@@ -45,6 +46,7 @@ namespace Gimbal
         ControllerList yaw_relative_pid;
         ControllerList yaw_absolute_pid;
         ControllerList pitch_absolute_pid;
+        ControllerList pitch_relative_pid;
 
         Shoot::Shoot shoot;
     };

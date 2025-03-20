@@ -38,15 +38,19 @@ namespace Gimbal
 
         yaw_motor.setCtrl(Pid::PidPosition(config.yaw_rate_pid_config, yaw_gyro));
         pitch_motor.setCtrl(
-            Pid::PidPosition(config.pitch_rate_pid_config, pitch_gyro) >> Pid::Invert(config.gimbal_motor_dir));
+            Pid::PidPosition(config.pitch_rate_pid_config, pitch_gyro) >>
+            Pid::Invert(config.gimbal_motor_dir));
 
         yaw_relative_pid = Pid::PidRad(config.yaw_relative_pid_config, yaw_relative);
         MUXDEF(
             CONFIG_SENTRY,
-            yaw_absolute_pid = Pid::PidRad(config.yaw_absolute_pid_config, fake_yaw_abs) >> Pid::Invert(-1),
-            yaw_absolute_pid = Pid::PidRad(config.yaw_absolute_pid_config, imu.yaw) >> Pid::Invert(-1));
+            yaw_absolute_pid =
+                Pid::PidRad(config.yaw_absolute_pid_config, fake_yaw_abs) >> Pid::Invert(-1),
+            yaw_absolute_pid =
+                Pid::PidRad(config.yaw_absolute_pid_config, imu.yaw) >> Pid::Invert(-1));
 
         pitch_absolute_pid = Pid::PidRad(config.pitch_absolute_pid_config, imu.pitch);
+        pitch_relative_pid = Pid::PidRad(config.pitch_relative_pid_config, pitch_relative);
 
         imu.enable();
         yaw_motor.enable();
@@ -56,7 +60,8 @@ namespace Gimbal
     void GimbalT::init_task() {
         while (imu.offline() || yaw_motor.offline() || pitch_motor.offline()) {
             UserLib::sleep_ms(Config::GIMBAL_CONTROL_TIME);
-            LOG_INFO("offline %d %d %d\n", imu.offline(), yaw_motor.offline(), pitch_motor.offline());
+            LOG_INFO(
+                "offline %d %d %d\n", imu.offline(), yaw_motor.offline(), pitch_motor.offline());
         }
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
         std::cout << "yaw now: " << imu.yaw << ", " << imu.pitch << std::endl;
@@ -66,10 +71,17 @@ namespace Gimbal
             }
 
             0.f >> yaw_relative_pid >> yaw_motor;
-            0.f >> pitch_absolute_pid >> pitch_motor;
-            // LOG_INFO("imu : %6f %6f %6f %6d\n", imu.yaw, imu.pitch, imu.roll, yaw_motor.motor_measure_.ecd);
+            0.f >> pitch_relative_pid >> pitch_motor;
+            // LOG_INFO(
+            //    "imu : %6f %6f %6f %6d\n",
+            //    imu.yaw,
+            //    imu.pitch,
+            //    imu.roll,
+            //    yaw_motor.motor_measure_.ecd);
+            LOG_INFO("pitch ecd %d %f\n", pitch_motor.motor_measure_.ecd, pitch_relative);
 
-            if (fabs(yaw_relative) < Config::GIMBAL_INIT_EXP && fabs(imu.pitch) < Config::GIMBAL_INIT_EXP) {
+            if (fabs(yaw_relative) < Config::GIMBAL_INIT_EXP &&
+                fabs(imu.pitch) < Config::GIMBAL_INIT_EXP) {
                 init_stop_times += 1;
             } else {
                 init_stop_times = 0;
@@ -136,7 +148,7 @@ namespace Gimbal
                 *pitch_set >> pitch_absolute_pid >> pitch_motor;
             } else {
                 *yaw_set >> yaw_absolute_pid >> yaw_motor;
-                *pitch_set >> pitch_absolute_pid >> pitch_motor;
+                *pitch_set >> pitch_relative_pid >> pitch_motor;
             }
 
             if (config.gimbal_id == 1) {
@@ -152,8 +164,11 @@ namespace Gimbal
     }
 
     void GimbalT::update_data() {
-        yaw_relative =
-            UserLib::rad_format(yaw_motor.data_.rotor_angle - Hardware::DJIMotor::ECD_8192_TO_RAD * config.YawOffSet);
+        yaw_relative = UserLib::rad_format(
+            yaw_motor.data_.rotor_angle - Hardware::DJIMotor::ECD_8192_TO_RAD * config.YawOffSet);
+        pitch_relative = UserLib::rad_format(
+            pitch_motor.data_.rotor_angle -
+            Hardware::DJIMotor::ECD_8192_TO_RAD * config.PitchOffSet);
         yaw_gyro = (std::cos(imu.pitch) * imu.yaw_rate - std::sin(imu.pitch) * imu.roll_rate);
         pitch_gyro = imu.pitch_rate;
         // gimbal sentry follow needs

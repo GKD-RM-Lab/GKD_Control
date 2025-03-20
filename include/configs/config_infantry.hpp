@@ -85,8 +85,12 @@ namespace Config
             .max_out =      60.0f,
             .max_iout =     0.0f,
         },
-                //PID PITCH POSITION
-        .pitch_absolute_pid_config = {
+
+   .pitch_relative_pid_config {
+        12.0f, 0.0f, 0.0f, 10.0f, 0.0f,
+    },
+    // PID PITCH POSITION
+    .pitch_absolute_pid_config = {
             .kp =           13.45f,
             .ki =           0.0f,
             .kd =           0.0f,
@@ -97,6 +101,7 @@ namespace Config
         .gimbal_id = 1,
         .ControlTime = 1,
         .YawOffSet = 2114,
+        .PitchOffSet = 7774,
         .shoot_config = {
             .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "Hero_Gimbal", 1, 0.075},
             .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "Hero_Gimbal", 2, 0.075},
@@ -116,7 +121,7 @@ namespace Config
                 9000.0f,   // MAX_IOUT
             }
         }
-    };
+};  // namespace Config
 
     // NOTE: PID CONFIG
 
