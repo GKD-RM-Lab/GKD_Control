@@ -5,8 +5,8 @@
 #include "utils.hpp"
 
 const auto shoot_config = Shoot::ShootConfig{
-    .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 1, 0.075},
-    .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 2, 0.075},
+    .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 2, 0.075},
+    .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 1, 0.075},
     .trigger_motor_config = Hardware::DJIMotorConfig{2006, "can0", 3, 0.075},
     .friction_speed_pid_config = Pid::PidConfig{
         2000.f,       // KP
