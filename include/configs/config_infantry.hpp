@@ -215,7 +215,7 @@ namespace Config
 
     constexpr fp32 FRICTION_MAX_SPEED = 3.7f;
     constexpr fp32 FRICTION_ADD_SPEED = 1.0f;
-    constexpr fp32 CONTINUE_TRIGGER_SPEED = 4.f;
+    constexpr fp32 CONTINUE_TRIGGER_SPEED = 6.f;
 
     constexpr uint32_t CHASSIS_CONTROL_TIME = 2;
     constexpr uint32_t GIMBAL_CONTROL_TIME = 1;
