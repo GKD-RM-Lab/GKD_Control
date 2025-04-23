@@ -1,13 +1,3 @@
-<!--
- * @Author: Junity
- * @Date: 2025-04-22 11:53:11
- * @LastEditors: Junity
- * @LastEditTime: 2025-04-22 12:07:50
- * @FilePath: \GKD_Control\README.md
- * @Description: 
- * 
- * Copyright (c) 2025 by Junity, All Rights Reserved. 
--->
 # GKD 电视一体电控部分代码
 - 本项目是为哨兵开发的电视一体代码的衍生泛用版本。
 
