@@ -182,7 +182,6 @@ class Logger:public Singleton<Logger>{
                 
                 {
                     std::unique_lock<std::mutex> lock(_mtx);
-                    // 等待直到队列不为空
                     _cv.wait(lock, [this]{ return !_q.empty(); });
 
                     size_t count = 0;
@@ -191,7 +190,7 @@ class Logger:public Singleton<Logger>{
                         _q.pop();
                         count++;
                     }
-                } // unique_lock 在此被析构，互斥锁被释放
+                } 
 
                 if (buffer.empty()) {
                     continue;
