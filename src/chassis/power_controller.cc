@@ -129,14 +129,14 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         }
     }
 
-    LOG_INFO(
-        "sum power: %f, Max power: %f, Measured: %f, CapEnergy: %d, buffer_energy %d %d\n",
-        sumCmdPower,
-        maxPower,
-        measuredPower,
-        robot_set->super_cap_info.capEnergy,
-        robot_set->referee_info.game_robot_status_data.robot_id,
-        robot_set->referee_info.game_robot_status_data.robot_level);
+    // LOG_INFO(
+    //     "sum power: %f, Max power: %f, Measured: %f, CapEnergy: %d, buffer_energy %d %d\n",
+    //     sumCmdPower,
+    //     maxPower,
+    //     measuredPower,
+    //     robot_set->super_cap_info.capEnergy,
+    //     robot_set->referee_info.game_robot_status_data.robot_id,
+    //     robot_set->referee_info.game_robot_status_data.robot_level);
 
     {       
         logger.push_value("chassis.pc.sum power",  sumCmdPower);
