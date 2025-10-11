@@ -1,5 +1,5 @@
 add_rules("mode.debug", "mode.release")
-add_requires("serial","concurrentqueue")
+add_requires("serial")
 set_toolchains("clang")
 
 option("type")
@@ -29,7 +29,7 @@ target("GKDControl")
         "include/utils",
         "include/logger"
     )
-    add_packages("serial","concurrentqueue")
+    add_packages("serial")
     set_warnings("allextra")
 
     add_options("type")

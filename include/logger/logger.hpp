@@ -1,8 +1,9 @@
 #pragma once
 
-#include "utils.hpp"
-#include <concurrentqueue.h>
-#include <blockingconcurrentqueue.h>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <vector>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -21,11 +22,12 @@
 #include <utility>
 #include "singleton.hpp"
 
-//tcp发送端初始化
 
-//入列并转换，用map存储名字
+#define LOG_ERR(s, ...)                                              \
+    do {                                                             \
+        printf(ANSI_FMT(s, ANSI_FG_RED) __VA_OPT__(, ) __VA_ARGS__); \
+    } while (0)
 
-//tcp发送
 
 enum class MessageType : uint8_t {
     RegisterName = 0x00,
@@ -37,7 +39,6 @@ enum class MessageType : uint8_t {
 struct LogMessage {
     static std::string build(const std::string& data, MessageType type) {
         uint16_t package_size = static_cast<uint16_t>(data.size() + sizeof(uint16_t) + sizeof(uint8_t));
-        // = 2字节长度 + 1字节类型 + data.size()
 
         std::string res;
         res.resize(package_size);
@@ -56,15 +57,10 @@ struct LogRegisterNameMessage : public LogMessage {
     static std::string build(uint32_t id, const std::string& name) {
         uint8_t name_length = static_cast<uint8_t>(name.size());
 
-        // payload = id(4) + name_length(1) + name(n)
         std::string payload;
         payload.resize(sizeof(uint32_t) + sizeof(uint8_t) + name_length);
-
-        // 拷贝 id
         memcpy(payload.data(), &id, sizeof(id));
-        // 拷贝 name_length
         payload[sizeof(id)] = static_cast<char>(name_length);
-        // 拷贝 name
         memcpy(payload.data() + sizeof(id) + sizeof(uint8_t), name.data(), name_length);
 
         return LogMessage::build(payload, MessageType::RegisterName);
@@ -129,27 +125,28 @@ inline uint32_t string_hash(const std::string& str) {
 class Logger:public Singleton<Logger>{
     private:
         std::unordered_set<std::string> _registered_names;
-        moodycamel::BlockingConcurrentQueue<std::string> _q;
+        std::queue<std::string> _q;
+        std::mutex _mtx;
+        std::condition_variable _cv;
         int client_socket;
+        std::mutex _mutex;
 
     public:
         template<typename T,typename... Args>
         inline void push_message(Args&&... args){
             auto message = T::build(std::forward<Args>(args)...);
-            _q.enqueue(message);
+            {
+                std::lock_guard<std::mutex> lock(_mtx);
+                _q.push(message);
+            }
+   
+            _cv.notify_one();
         }
 
         std::map<std::string,int> cnt;
 
 
         void push_value(const std::string& name,double value){
-            cnt[name] ++;
-            if(cnt[name] % 1000 == 0){
-                printf("%s\n",name.c_str());
-            }
-
-            return;
-
             uint32_t hash = string_hash(name);
 
             if(!_registered_names.contains(name)){
@@ -177,29 +174,26 @@ class Logger:public Singleton<Logger>{
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8080);
 
-    inet_pton(AF_INET, "192.168.1.116", &server_addr.sin_addr);
+    inet_pton(AF_INET, "192.168.1.53", &server_addr.sin_addr);
 
 
     while (true) {
-        std::vector<std::string> buffers(16);
-        std::string buffer = "";
+         std::string buffer;
+        
+        {
+            std::unique_lock<std::mutex> lock(_mtx);
+            // 等待直到队列不为空
+            _cv.wait(lock, [this]{ return !_q.empty(); });
 
-        _q.wait_dequeue_bulk(buffers.begin(), 16);
-        for (int i = 0; i < 16; i++)
-            buffer += buffers[i];
+            size_t count = 0;
+            while(!_q.empty() && count < 16) {
+                buffer += _q.front();
+                _q.pop();
+                count++;
+            }
+        } // unique_lock 在此被析构，互斥锁被释放
 
-        // 3. 修改 send() 为 sendto()，并传入目标地址
-        auto is_sent = sendto(
-            client_socket, 
-            buffer.data(), 
-            buffer.length(), 
-            0, 
-            (struct sockaddr *)&server_addr, 
-            sizeof(server_addr)
-        );
-
-        if (is_sent < 0) {
-            LOG_ERR("发送失败");
+        if (buffer.empty()) {
             continue;
         }
     }
