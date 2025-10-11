@@ -163,41 +163,41 @@ class Logger:public Singleton<Logger>{
         //TODO
         void push_message_box(const std::string& msg);
 
-       [[noreturn]] void task() {
+        [[noreturn]] void task() {
 
-    client_socket = socket(AF_INET, SOCK_DGRAM, 0); 
-    if (client_socket < 0) {
-        std::cout << "socket创建失败" << std::endl;
-    }
-
-    sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(8080);
-
-    inet_pton(AF_INET, "192.168.1.53", &server_addr.sin_addr);
-
-
-    while (true) {
-         std::string buffer;
-        
-        {
-            std::unique_lock<std::mutex> lock(_mtx);
-            // 等待直到队列不为空
-            _cv.wait(lock, [this]{ return !_q.empty(); });
-
-            size_t count = 0;
-            while(!_q.empty() && count < 16) {
-                buffer += _q.front();
-                _q.pop();
-                count++;
+            client_socket = socket(AF_INET, SOCK_DGRAM, 0); 
+            if (client_socket < 0) {
+                std::cout << "socket创建失败" << std::endl;
             }
-        } // unique_lock 在此被析构，互斥锁被释放
 
-        if (buffer.empty()) {
-            continue;
+            sockaddr_in server_addr;
+            server_addr.sin_family = AF_INET;
+            server_addr.sin_port = htons(8080);
+
+            inet_pton(AF_INET, "192.168.1.53", &server_addr.sin_addr);
+
+
+            while (true) {
+                std::string buffer;
+                
+                {
+                    std::unique_lock<std::mutex> lock(_mtx);
+                    // 等待直到队列不为空
+                    _cv.wait(lock, [this]{ return !_q.empty(); });
+
+                    size_t count = 0;
+                    while(!_q.empty() && count < 16) {
+                        buffer += _q.front();
+                        _q.pop();
+                        count++;
+                    }
+                } // unique_lock 在此被析构，互斥锁被释放
+
+                if (buffer.empty()) {
+                    continue;
+                }
+            }
         }
-    }
-}
 
 };
 
