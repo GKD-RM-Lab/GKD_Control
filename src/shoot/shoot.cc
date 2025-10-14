@@ -55,11 +55,12 @@ namespace Shoot
             //     "ramp %f %f\n", friction_ramp.out, right_friction.data_.output_linear_velocity);
             left_friction.set(-friction_ramp.out);
             right_friction.set(friction_ramp.out);
-            if(left_friction.data_.output_linear_velocity != 0)
+            if(left_friction.data_.output_linear_velocity || right_friction.data_.output_linear_velocity )
             {
-                LOG_INFO("left: %f, right: %f\n", left_friction.data_.output_linear_velocity, right_friction.data_.output_linear_velocity);
+                LOG_INFO("set: %f,left: %f, right: %f\n", friction_ramp.out, left_friction.data_.output_linear_velocity, right_friction.data_.output_linear_velocity);
                 std::stringstream ss;
-                 ss << "left: " << left_friction.data_.output_linear_velocity 
+                 ss << "set: " << friction_ramp.out
+                << ", left: " << left_friction.data_.output_linear_velocity 
                 << ", right: " << right_friction.data_.output_linear_velocity 
                 << "\n";
                 std::string log_content = ss.str();

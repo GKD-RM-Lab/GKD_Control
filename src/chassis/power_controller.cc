@@ -230,7 +230,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         static Math::Matrixf<2, 1> samples;
         static Math::Matrixf<2, 1> params;
         static float effectivePower = 0;
-        std::ofstream outputFile("log.txt");
+        //std::ofstream outputFile("log.txt");
 
         isInitialized = true;
 
@@ -335,7 +335,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             // NOTE: for dumping log and draw purpose
             // printf("%f, %f\n", baseMaxPower, fullMaxPower);
             // outputFile << refereeMaxPower << ", " << baseMaxPower << "\n" << std::flush;
-            outputFile << baseMaxPower << ", " << fullMaxPower << "\n" << std::flush;
+            //outputFile << baseMaxPower << ", " << fullMaxPower << "\n" << std::flush;
 
             // update power status
             powerStatus.userConfiguredMaxPower = userConfiguredMaxPower;
