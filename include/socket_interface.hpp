@@ -35,6 +35,9 @@ namespace IO
                 MSG_CONFIRM,
                 (const struct sockaddr *)&clients.find(header)->second,
                 sizeof(clients.find(header)->second));
+            if(n == -1) {
+                LOG_ERR("error socket send");
+            }  
         }
 
        private:

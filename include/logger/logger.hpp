@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <queue>
 #include <mutex>
 #include <condition_variable>
@@ -123,80 +124,89 @@ inline uint32_t string_hash(const std::string& str) {
 }
 
 class Logger:public Singleton<Logger>{
-    private:
-        std::unordered_set<std::string> _registered_names;
-        std::queue<std::string> _q;
-        std::mutex _mtx;
-        std::condition_variable _cv;
-        int client_socket;
-        std::mutex _mutex;
+private:
+    std::unordered_set<std::string> _registered_names;
+    std::queue<std::string> _q;
+    std::mutex _mtx;
+    std::condition_variable _cv;
+    int client_socket;
+    std::mutex _mutex;
 
-    public:
-        template<typename T,typename... Args>
-        inline void push_message(Args&&... args){
-            auto message = T::build(std::forward<Args>(args)...);
+public:
+    template<typename T,typename... Args>
+    inline void push_message(Args&&... args){
+        auto message = T::build(std::forward<Args>(args)...);
+        {
+            std::lock_guard<std::mutex> lock(_mtx);
+            _q.push(message);
+        }
+
+        _cv.notify_one();
+    }
+
+    std::map<std::string,int> cnt;
+
+
+    void push_value(const std::string& name,double value){
+        uint32_t hash = string_hash(name);
+
+        if(!_registered_names.contains(name)){
+            push_message<LogRegisterNameMessage>(hash,name);
+            _registered_names.insert(name);
+        }
+
+        push_message<LogUpdateValueMessage>(hash,value);
+    }
+
+    // TODO
+    void push_console_message(const std::string& msg);
+
+    //TODO
+    void push_message_box(const std::string& msg);
+
+    [[noreturn]] void task() {
+
+        client_socket = socket(AF_INET, SOCK_DGRAM, 0); 
+        if (client_socket < 0) {
+            std::cout << "socket创建失败" << std::endl;
+        }
+
+        sockaddr_in server_addr;
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(8080);
+
+        inet_pton(AF_INET, "192.168.1.53", &server_addr.sin_addr);
+
+
+        while (true) {
+            std::string buffer;
+            
             {
-                std::lock_guard<std::mutex> lock(_mtx);
-                _q.push(message);
-            }
-   
-            _cv.notify_one();
-        }
+                std::unique_lock<std::mutex> lock(_mtx);
+                _cv.wait(lock, [this]{ return !_q.empty(); });
 
-        std::map<std::string,int> cnt;
-
-
-        void push_value(const std::string& name,double value){
-            uint32_t hash = string_hash(name);
-
-            if(!_registered_names.contains(name)){
-                push_message<LogRegisterNameMessage>(hash,name);
-                _registered_names.insert(name);
-            }
-
-            push_message<LogUpdateValueMessage>(hash,value);
-        }
-
-        // TODO
-        void push_console_message(const std::string& msg);
-
-        //TODO
-        void push_message_box(const std::string& msg);
-
-        [[noreturn]] void task() {
-
-            client_socket = socket(AF_INET, SOCK_DGRAM, 0); 
-            if (client_socket < 0) {
-                std::cout << "socket创建失败" << std::endl;
-            }
-
-            sockaddr_in server_addr;
-            server_addr.sin_family = AF_INET;
-            server_addr.sin_port = htons(8080);
-
-            inet_pton(AF_INET, "192.168.1.53", &server_addr.sin_addr);
-
-
-            while (true) {
-                std::string buffer;
-                
-                {
-                    std::unique_lock<std::mutex> lock(_mtx);
-                    _cv.wait(lock, [this]{ return !_q.empty(); });
-
-                    size_t count = 0;
-                    while(!_q.empty() && count < 16) {
-                        buffer += _q.front();
-                        _q.pop();
-                        count++;
-                    }
-                } 
-
-                if (buffer.empty()) {
-                    continue;
+                size_t count = 0;
+                while(!_q.empty() && count < 16) {
+                    buffer += _q.front();
+                    _q.pop();
+                    count++;
                 }
+            } 
+
+            if (buffer.empty()) {
+                continue;
             }
         }
+    }
+
+    void into_txt(std::string file_path, std::string log) {
+        std::ofstream ofs(file_path, std::ios::app);
+        if (!ofs.is_open()) {
+            std::cout << "error open: " << file_path << std::endl;
+        }
+        ofs << log << "\n"; 
+        ofs.close(); 
+    }    
 
 };
 

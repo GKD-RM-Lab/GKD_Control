@@ -13,7 +13,6 @@ namespace Shoot
         Hardware::DJIMotorConfig trigger_motor_config;
         Pid::PidConfig friction_speed_pid_config;
         Pid::PidConfig trigger_speed_pid_config;
-        int8_t trigger_dir;
         int gimbal_id;
     };
 

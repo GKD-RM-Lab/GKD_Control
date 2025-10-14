@@ -55,7 +55,7 @@ namespace Gimbal
             } else {
                 init_stop_times = 0;
             }
-            if (init_stop_times >= Config::GIMBAL_INIT_STOP_TIME)
+            if (init_stop_times >= static_cast<int>(Config::GIMBAL_INIT_STOP_TIME))
                 robot_set->inited |= 1 << 2;
             UserLib::sleep_ms(Config::GIMBAL_CONTROL_TIME);
         }

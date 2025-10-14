@@ -252,7 +252,6 @@ namespace Config
                     10000.0f,  // MAX_OUT
                     9000.0f,   // MAX_IOUT
                 },
-                .trigger_dir = 1,
             }
         };
 

@@ -18,9 +18,10 @@ namespace Device
 
        private:
         using time_point = typename std::chrono::system_clock::time_point;
-
-        uint32_t offline_time;
+        
         time_point last_time;
+        uint32_t offline_time;
+        
     };
 }  // namespace Device
 
