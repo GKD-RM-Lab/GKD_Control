@@ -1,4 +1,6 @@
 #include "shoot.hpp"
+#include <cmath>
+#include <iostream>
 
 #include "macro_helpers.hpp"
 #include "pid_controller.hpp"
@@ -51,6 +53,8 @@ namespace Shoot
             //     "ramp %f %f\n", friction_ramp.out, right_friction.data_.output_linear_velocity);
             left_friction.set(-friction_ramp.out);
             right_friction.set(friction_ramp.out);
+
+            LOG_INFO("left: %f, right: %f\n", left_friction.data_.output_linear_velocity, right_friction.data_.output_linear_velocity);
 
             bool shoot_heat = true;
 
