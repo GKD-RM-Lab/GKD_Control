@@ -201,6 +201,22 @@ public:
             if (buffer.empty()) {
                 continue;
             }
+
+            ssize_t sent_bytes = sendto(
+                client_socket, 
+                buffer.data(), 
+                buffer.size(), 
+                0, 
+                (struct sockaddr*)&server_addr, 
+                sizeof(server_addr)
+            );
+            
+            if (sent_bytes < 0) {
+                ;
+            } else if ((size_t)sent_bytes != buffer.size()) {
+                ;
+            }
+
         }
     }
 
