@@ -159,10 +159,15 @@ public:
     }
 
     // TODO
-    void push_console_message(const std::string& msg);
+    void push_console_message(const std::string& msg) {
+
+        push_message<LogConsoleMessage>(msg);
+    }
 
     //TODO
-    void push_message_box(const std::string& msg);
+    void push_message_box(const std::string& msg) {
+        push_message<LogMessageBoxMessage>(msg);
+    }
 
     [[noreturn]] void task() {
 

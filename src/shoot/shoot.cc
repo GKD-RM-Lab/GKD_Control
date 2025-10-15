@@ -57,14 +57,14 @@ namespace Shoot
             right_friction.set(friction_ramp.out);
             if(left_friction.data_.output_linear_velocity || right_friction.data_.output_linear_velocity )
             {
-                LOG_INFO("set: %f,left: %f, right: %f\n", friction_ramp.out, left_friction.data_.output_linear_velocity, right_friction.data_.output_linear_velocity);
+                //LOG_INFO("set: %f,left: %f, right: %f\n", friction_ramp.out, left_friction.data_.output_linear_velocity, right_friction.data_.output_linear_velocity);
                 std::stringstream ss;
                  ss << "set: " << friction_ramp.out
                 << ", left: " << left_friction.data_.output_linear_velocity 
                 << ", right: " << right_friction.data_.output_linear_velocity 
                 << "\n";
                 std::string log_content = ss.str();
-                logger.into_txt("../fric_log.txt", log_content);
+                logger.into_txt("../../../../fric_log.txt", log_content);
 
             }
             bool shoot_heat = true;
