@@ -93,7 +93,7 @@ namespace Device
         }
 
 
-        if (pkg.mouse_r || (pkg.s1 == S1_DOWN && pkg.s2 == S2_DOWN)) {
+        if (pkg.mouse_r || (pkg.s1 == S1_DOWN && pkg.s2 == S2_UP)) {
             robot_set->auto_aim_status = true;
             // LOG_INFO("auto aim status : %d\n", pkg.s1);
         } else {
