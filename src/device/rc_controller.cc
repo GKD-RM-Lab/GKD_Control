@@ -129,9 +129,9 @@ namespace Device
             
 
         // auto-aim, disable control
-        if (pkg.s1 == S1_DOWN) {
-            return; 
-        }
+        // if (pkg.s1 == S1_DOWN) {
+        //     return; 
+        // }
         if (inited) {
             // LOG_INFO("rc controller ch1 %d %d %d %d\n", pkg.s1, pkg.s2, pkg.ch1, pkg.ch3);
             robot_set->vx_set = ((float)pkg.ch3 / RC_SCALE) * CHASSIS_SPEED_SCALE;
