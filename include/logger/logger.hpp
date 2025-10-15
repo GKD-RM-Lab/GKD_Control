@@ -212,9 +212,9 @@ public:
             );
             
             if (sent_bytes < 0) {
-                ;
+                
             } else if ((size_t)sent_bytes != buffer.size()) {
-                ;
+                
             }
 
         }
