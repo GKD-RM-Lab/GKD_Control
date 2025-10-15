@@ -39,7 +39,7 @@ namespace Robot
         Device::Dji_referee referee;
         Chassis::Chassis chassis;
         Config::GimbalType gimbal;
-        IFDEF(CONFIG_SENTRY, Gimbal::GimbalT gimbal_left, gimbal_right);
+        IFDEF(CONFIG_SENTRY, Gimbal::GimbalT gimbal_sentry);
 
         Device::Super_Cap super_cap;
     };

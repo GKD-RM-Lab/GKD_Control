@@ -17,14 +17,12 @@ namespace Config
 
     const std::vector<std::string> CanInitList = { "CAN_CHASSIS",
                                                    "CAN_BULLET",
-                                                   "CAN_LEFT_HEAD",
                                                    "CAN_RIGHT_HEAD" };
 
     const std::vector<std::string> SocketInitList = { "AUTO_AIM_CONTROL" };
 
     const std::vector<std::tuple<std::string, int, int>> SerialInitList = {
         { "/dev/IMU_RIGHT", 115200, 2000 },
-        { "/dev/IMU_LEFT", 115200, 2000 },
         { "/dev/IMU_BIG_YAW", 115200, 2000 }
     };
 
@@ -55,75 +53,8 @@ namespace Config
 				.follow_dir = 1,
     };
 
-    const Gimbal::GimbalConfig gimbal_left_config = {
-            .imu_serial_port = "/dev/IMU_RIGHT",
-            .yaw_motor_config = Hardware::DJIMotorConfig(6020, "CAN_LEFT_HEAD", 1),
-            .pitch_motor_config = Hardware::DJIMotorConfig(6020, "CAN_LEFT_HEAD", 2),
-            .yaw_rate_pid_config = {
-                .kp =           5000.f,
-                .ki =           0.0f,
-                .kd =           0.f,
-                .max_out =      20000.0f,
-                .max_iout =     5000.0f,
-            },
-            .pitch_rate_pid_config = {
-                .kp =           5500.0f,
-                .ki =           100.0f,
-                .kd =           0.0f,
-                .max_out =      30000.0f,
-                .max_iout =     5000.0f,
-            },
-            .yaw_relative_pid_config ={
-                .kp =           8.0f,
-                .ki =           0.0f,
-                .kd =           0.3f,
-                .max_out =      10.0f,
-                .max_iout =     0.0f,
-            },
-            .yaw_absolute_pid_config = {
-                .kp =           12.0f,
-                .ki =           0.0f,
-                .kd =           0.3f,
-                .max_out =      10.0f,
-                .max_iout =     0.0f,
-            },
-            .pitch_absolute_pid_config = {
-                .kp =           15.0f,
-                .ki =           0.0f,
-                .kd =           10.0f,
-                .max_out =      10.0f,
-                .max_iout =     0.0f,
-            },
-            .gimbal_motor_dir = -1.0,
-            .gimbal_id = 2,
-            .ControlTime = 1,
-            .YawOffSet = 614,
-            .shoot_config = {
-                .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "CAN_LEFT_HEAD", 1, 0.075},
-                .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "CAN_LEFT_HEAD", 2, 0.075},
-                .trigger_motor_config = Hardware::DJIMotorConfig{2006, "CAN_BULLET", 1, 0.075},
-                .friction_speed_pid_config = Pid::PidConfig{
-                    2000.f,       // KP
-                    0.05f,     // KI
-                    10.0f,     // KD
-                    16000.0f,  // MAX_OUT
-                    2000.0f,   // MAX_IOUT
-                },
-                .trigger_speed_pid_config = Pid::PidConfig{
-                    1000.0f,    // KP
-                    50.f,      // KI
-                    0.0f,      // KD
-                    10000.0f,  // MAX_OUT
-                    9000.0f,   // MAX_IOUT
-                },
-                .gimbal_id = 2
-            },
-            .header = 0x6B,
-            .auto_aim_ip = "192.168.10.2",
-            .auto_aim_port = 11453,
-        };
-
-    const Gimbal::GimbalConfig gimbal_right_config = {
+//rm left_head
+    const Gimbal::GimbalConfig gimbal_config = {
             .imu_serial_port = "/dev/IMU_LEFT",
             .yaw_motor_config = Hardware::DJIMotorConfig(6020, "CAN_RIGHT_HEAD", 2),
             .pitch_motor_config = Hardware::DJIMotorConfig(6020, "CAN_RIGHT_HEAD", 1),

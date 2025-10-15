@@ -13,10 +13,9 @@ namespace Robot
         : rc_controller(Config::rc_controller_serial),
           gimbal(Config::gimbal_config),
           chassis(Config::chassis_config) IFDEF(
-              CONFIG_SENTRY,
-              ,
-              gimbal_left(Config::gimbal_left_config),
-              gimbal_right(Config::gimbal_right_config)) {
+            CONFIG_SENTRY, 
+            ,
+            gimbal_sentry(Config::gimbal_config)) {
         robot_set = std::make_shared<Robot_set>();
     }
 
@@ -34,15 +33,13 @@ namespace Robot
         
         chassis.init(robot_set);
         gimbal.init(robot_set);
-        IFDEF(CONFIG_SENTRY, gimbal_left.init(robot_set));
-        IFDEF(CONFIG_SENTRY, gimbal_right.init(robot_set));
+        IFDEF(CONFIG_SENTRY, gimbal_sentry.init(robot_set));
 
         // start DJIMotorManager thread
         Hardware::DJIMotorManager::start();
 
         threads.emplace_back(&Config::GimbalType::init_task, &gimbal);
-        IFDEF(CONFIG_SENTRY, threads.emplace_back(&Gimbal::GimbalT::init_task, &gimbal_left));
-        IFDEF(CONFIG_SENTRY, threads.emplace_back(&Gimbal::GimbalT::init_task, &gimbal_right));
+        IFDEF(CONFIG_SENTRY, threads.emplace_back(&Gimbal::GimbalT::init_task, &gimbal_sentry));
     }
 
     void Robot_ctrl::init_join() {
@@ -54,10 +51,8 @@ namespace Robot
         threads.emplace_back(&Chassis::Chassis::task, &chassis);
         threads.emplace_back(&Device::Dji_referee::task, &referee);
         threads.emplace_back(&Device::Dji_referee::task_ui, &referee);
-        IFDEF(CONFIG_SENTRY, threads.emplace_back(&Gimbal::GimbalT::task, &gimbal_left));
-        IFDEF(CONFIG_SENTRY, threads.emplace_back(&Gimbal::GimbalT::task, &gimbal_right));
+        IFDEF(CONFIG_SENTRY, threads.emplace_back(&Gimbal::GimbalT::task, &gimbal_sentry));
         IFDEF(__DEBUG__, threads.emplace_back(&Logger::task, &logger));
-
     }
 
     void Robot_ctrl::join() {
