@@ -88,8 +88,8 @@ namespace Gimbal
                     *another_pitch_set = vc.pitch_set;
                 }
 
-                if (!ISDEF(CONFIG_SENTRY) && !robot_set->auto_aim_status)
-                    return;
+                // if (!ISDEF(CONFIG_SENTRY) && !robot_set->auto_aim_status)
+                //     return;
                 *yaw_set = vc.yaw_set;
                 *pitch_set = vc.pitch_set;
             });

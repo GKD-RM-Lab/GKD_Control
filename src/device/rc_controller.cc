@@ -106,8 +106,8 @@ namespace Device
             robot_set->shoot_open = SHOOT_PERMISSION_NONE;
         }
 
-        if (robot_set->auto_aim_status)
-            return;
+        // if (robot_set->auto_aim_status)
+        //     return;
 
         robot_set->gimbalT_1_yaw_set += pkg.mouse_x / 10000.;
 
