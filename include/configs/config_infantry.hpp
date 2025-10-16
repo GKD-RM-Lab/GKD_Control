@@ -13,7 +13,7 @@ namespace Config
 {
     using GimbalType = Gimbal::GimbalT;
 
-    const std::vector<std::string> CanInitList = { "can0", "can1" };
+    const std::vector<std::string> CanInitList = { "can1", "can0" };
 
     const std::vector<std::string> SocketInitList = { "AUTO_AIM_CONTROL" };
 
@@ -23,14 +23,14 @@ namespace Config
 
     const std::string rc_controller_serial = "/dev/IMU_HERO";
 
-    const std::string super_cap_can_interface = "can0";
+    const std::string super_cap_can_interface = "can1";
 
     const Chassis::ChassisConfig chassis_config = {
         .wheels_config = {
-            Hardware::DJIMotorConfig{3508, "can0", 1, 0.075},
-            Hardware::DJIMotorConfig{3508, "can0", 2, 0.075},
-            Hardware::DJIMotorConfig{3508, "can0", 3, 0.075},
-            Hardware::DJIMotorConfig{3508, "can0", 4, 0.075}
+            Hardware::DJIMotorConfig{3508, "can1", 1, 0.075},
+            Hardware::DJIMotorConfig{3508, "can1", 2, 0.075},
+            Hardware::DJIMotorConfig{3508, "can1", 3, 0.075},
+            Hardware::DJIMotorConfig{3508, "can1", 4, 0.075}
         },
         .chassis_follow_gimbal_pid_config = {
             .kp =           2.0f,
@@ -52,8 +52,8 @@ namespace Config
 
     const Gimbal::GimbalConfig gimbal_config = {
         .imu_serial_port = "/dev/IMU_HERO",
-        .yaw_motor_config = Hardware::DJIMotorConfig(6020, "can1", 1),
-        .pitch_motor_config = Hardware::DJIMotorConfig(6020, "can1", 2),
+        .yaw_motor_config = Hardware::DJIMotorConfig(6020, "can0", 1),
+        .pitch_motor_config = Hardware::DJIMotorConfig(6020, "can0", 2),
         .yaw_rate_pid_config = {
             .kp =           16668.f,
             .ki =           234.f,
@@ -98,9 +98,9 @@ namespace Config
         .ControlTime = 1,
         .YawOffSet = 2114,
         .shoot_config = {
-            .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "can1", 1, 0.075},
-            .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "can1", 2, 0.075},
-            .trigger_motor_config = Hardware::DJIMotorConfig{2006, "can1", 3, 0.075},
+            .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 1, 0.075},
+            .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "can", 2, 0.075},
+            .trigger_motor_config = Hardware::DJIMotorConfig{2006, "can0", 3, 0.075},
             .friction_speed_pid_config = Pid::PidConfig{
                 2000.f,       // KP
                 0.05f,     // KI
