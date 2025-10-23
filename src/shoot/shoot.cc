@@ -64,7 +64,7 @@ namespace Shoot
             //     << ", right: " << right_friction.data_.output_linear_velocity 
             //     << "\n";
             //     std::string log_content = ss.str();
-            //     logger.into_txt("../../../../fric_log.txt", log_content);
+            //     logger.into_txt("../../../../log/fric_log.txt", log_content);
 
             // }
             bool shoot_heat = true;

@@ -1,6 +1,5 @@
 #include <csignal>
 #include <user_lib.hpp>
-
 #include "robot_controller.hpp"
 #include "utils.hpp"
 

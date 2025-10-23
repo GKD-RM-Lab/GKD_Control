@@ -119,7 +119,7 @@ int main() {
 ```
 
 ## callback
-在hardware_callback.hpp中，提供了*Callback*类。
+在io_callback.hpp中，提供了*Callback*类。
 
 如果你的*IO*类想要实现设置回调函数的功能，需要*public*继承*Callback*类，并传入你想要进行callback的类型。
 
@@ -181,7 +181,7 @@ hardware.register_callback<idx>(function);
 
 ### 用例
 ```cpp
-#include "hardware_callback.hpp"
+#include "io_callback.hpp"
 #include "hardware_manager.hpp"
 
 class Can : public Hardware::Callback<int, std::string>
@@ -219,7 +219,7 @@ int main() {
 ```
 
 ## Callback_key
-在hardware_callback.hpp中，提供了*Callback_key*类。
+在io_callback.hpp中，提供了*Callback_key*类。
 
 如果你的一个*IO*设备挂载了多个相同的设备，但有着不同的设备ID，那么你可以选择继承*Callback_key*类。
 
@@ -265,7 +265,7 @@ hardware.register_callback<idx>(key, function);
 
 ### 用例
 ```cpp
-#include "hardware_callback.hpp"
+#include "io_callback.hpp"
 #include "hardware_manager.hpp"
 
 class Can : public Hardware::Callback_key<std::string, double>

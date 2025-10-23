@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include "hardware_callback.hpp"
+#include "io_callback.hpp"
 #include "types.hpp"
 
 namespace IO

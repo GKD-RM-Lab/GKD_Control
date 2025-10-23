@@ -27,7 +27,11 @@ target("GKDControl")
         "include/device/referee",
         "include/gimbal",
         "include/utils",
-        "include/logger"
+        "include/logger",
+        "./include/control",
+        "./include/robot_controller",
+        "./include/io",
+        "./include/shoot"
     )
     add_packages("serial")
     set_warnings("allextra")

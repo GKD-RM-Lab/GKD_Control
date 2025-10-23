@@ -4,7 +4,7 @@ from matplotlib.widgets import Slider
 import numpy as np
 
 # === 配置部分 ===
-LOG_FILE = "fric_log.txt"
+LOG_FILE = "../log/fric_log.txt"
 # 支持 "set: 0, left: 0, right: -0.0012401"
 pattern = re.compile(
     r"set:\s*(-?\d+\.\d+),\s*left:\s*(-?\d+\.\d+),\s*right:\s*(-?\d+\.\d+)"

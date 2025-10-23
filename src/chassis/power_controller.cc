@@ -230,7 +230,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         static Math::Matrixf<2, 1> samples;
         static Math::Matrixf<2, 1> params;
         static float effectivePower = 0;
-        //std::ofstream outputFile("log.txt");
+        //std::ofstream outputFile("log/log.txt");
 
         isInitialized = true;
 

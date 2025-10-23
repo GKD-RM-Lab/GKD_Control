@@ -2,7 +2,7 @@
 #define __SERIAL_INTERFACE__
 #include <functional>
 
-#include "hardware_callback.hpp"
+#include "io_callback.hpp"
 #include "serial/serial.h"
 #include "types.hpp"
 #include "utils.hpp"
