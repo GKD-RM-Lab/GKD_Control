@@ -11,6 +11,7 @@
 #include "types.hpp"
 #include "user_lib.hpp"
 #include "utils.hpp"
+#include <iomanip>
 namespace Gimbal
 {
     GimbalT::GimbalT(const GimbalConfig &config)
@@ -117,11 +118,36 @@ namespace Gimbal
             if (delta > 1000)
                 exit(-1);
         }
+
+        //auto start_time = std::chrono::steady_clock::now(); 
+
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
             update_data();
 
+            // auto current_time = std::chrono::steady_clock::now();  
+            
+            // // 1. 将时间差转换为以double为底层类型的秒数
+            // // std::chrono::duration<double> 默认的周期是秒（std::ratio<1>）
+            // std::chrono::duration<double> elapsed_seconds = current_time - start_time;
+            
+            // // 2. 获取秒数值
+            // double elapsed = elapsed_seconds.count();
+
+            // // 4. 使用 std::stringstream 进行输出并控制精度
+            // std::stringstream ss;
+            // // 设置浮点数格式为固定点，精度为小数点后两位
+            // ss << std::fixed << std::setprecision(4) 
+            // << elapsed << ", "
+            // << "0, "
+            // << yaw_motor.give_current ;
+            
+            // std::string log_content = ss.str();
+            // logger.into_txt("../../../../log/yaw_log.txt", log_content);
+
             0.f >> yaw_relative_pid >> yaw_motor;
-            0.f >> pitch_absolute_pid >> pitch_motor;
+            // 0.f >> pitch_absolute_pid >> pitch_motor;
+            
+            
             // LOG_INFO(
             //    "imu : %6f %6f %6f %6d\n",
             //    imu.yaw,
@@ -129,23 +155,21 @@ namespace Gimbal
             //    imu.roll,
             //    yaw_motor.motor_measure_.ecd);
 
-            // if (fabs(yaw_relative) < Config::GIMBAL_INIT_EXP &&
-            //     fabs(imu.pitch) < Config::GIMBAL_INIT_EXP) {
-            //     init_stop_times += 1;
-            // } else {
-            //     init_stop_times = 0;
-            // }
+            if (fabs(yaw_relative) < Config::GIMBAL_INIT_EXP 
+            // && fabs(imu.pitch) < Config::GIMBAL_INIT_EXP
+            ) {
+                init_stop_times += 1;
+            } else {
+                init_stop_times = 0;
+            }
 
-            init_stop_times = 2000;
 
             MUXDEF(CONFIG_SENTRY, *yaw_set = robot_set->gimbal_sentry_yaw, *yaw_set = imu.yaw);
             *pitch_set = 0;
 
-            LOG_INFO("init_stop_times:%d\n", init_stop_times);
-            if (init_stop_times >= Config::GIMBAL_INIT_STOP_TIME) {
-                if (config.gimbal_id == 1)
-                    robot_set->inited |= 1;
-            }
+            if (init_stop_times >= Config::GIMBAL_INIT_STOP_TIME) 
+                robot_set->inited |= 1;
+            
             UserLib::sleep_ms(config.ControlTime);
         }
     }
@@ -215,6 +239,12 @@ namespace Gimbal
     void GimbalT::update_data() {
         yaw_relative = UserLib::rad_format(
             yaw_motor.data_.rotor_angle - Hardware::DJIMotor::ECD_8192_TO_RAD * config.YawOffSet);
+
+        //LOG_INFO("%f - %f * %f = %f\n", yaw_motor.data_.rotor_angle, Hardware::DJIMotor::ECD_8192_TO_RAD, config.YawOffSet, yaw_relative);
+
+        //auto newYawOffSet = yaw_motor.data_.rotor_angle / Hardware::DJIMotor::ECD_8192_TO_RAD;
+        //LOG_INFO("Yawoffset:%f\n", newYawOffSet);
+            
         yaw_gyro = (std::cos(imu.pitch) * imu.yaw_rate - std::sin(imu.pitch) * imu.roll_rate);
         pitch_gyro = imu.pitch_rate;
         // gimbal sentry follow needs

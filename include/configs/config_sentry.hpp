@@ -96,7 +96,7 @@ namespace Config
             .gimbal_motor_dir = 1.0,
             .gimbal_id = 1,
             .ControlTime = 1,
-            .YawOffSet = 716,
+            .YawOffSet = 2475.f,
             .shoot_config = {
                 .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "CAN_BULLET", 1, 0.075},
                 .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "CAN_BULLET", 2, 0.075},

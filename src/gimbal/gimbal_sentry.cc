@@ -1,7 +1,7 @@
 #include "gimbal/gimbal_sentry.hpp"
 
 #include <future>
-
+#include "logger.hpp"
 #include "robot_type_config.hpp"
 #include "socket_interface.hpp"
 #include "types.hpp"
@@ -45,17 +45,18 @@ namespace Gimbal
 
     void GimbalSentry::init_task() {
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
-            LOG_INFO("robot_set->inited:%d\n", robot_set->inited);
+            //LOG_INFO("robot_set->inited:%d\n", robot_set->inited);
             update_data();
             0.f >> yaw_relative_pid >> yaw_motor;
             // LOG_INFO("big yaw %d %f\n", yaw_motor.motor_measure.ecd, yaw_relative);
             // LOG_INFO("yaw r %f\n", yaw_relative);
             *yaw_set = imu.yaw;
-            // if (fabs(yaw_relative) < Config::GIMBAL_INIT_EXP) {
-            //     init_stop_times += 1;
-            // } else {
-            //     init_stop_times = 0;
-            // }
+            if (fabs(yaw_relative) < Config::GIMBAL_INIT_EXP) {
+                init_stop_times += 1;
+            } else {
+                init_stop_times = 0;
+            }
+
             // if (init_stop_times >= static_cast<int>(Config::GIMBAL_INIT_STOP_TIME))
                 robot_set->inited |= 1 << 1;
             UserLib::sleep_ms(Config::GIMBAL_CONTROL_TIME);
@@ -101,6 +102,7 @@ namespace Gimbal
         yaw_relative = UserLib::rad_format(
             Config::M9025_ECD_TO_RAD *
             ((fp32)yaw_motor.motor_measure.ecd - Config::GIMBAL3_YAW_OFFSET_ECD));
+        //LOG_INFO("%f * %f - %f = %f\n", Config::M9025_ECD_TO_RAD, (fp32)yaw_motor.motor_measure.ecd, Config::GIMBAL3_YAW_OFFSET_ECD, yaw_relative);
         yaw_relative_with_head =
             robot_set->gimbalT_1_yaw_reletive;
         robot_set->gimbal_sentry_yaw_reletive = yaw_relative;
