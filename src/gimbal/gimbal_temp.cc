@@ -200,8 +200,39 @@ namespace Gimbal
                 }
                 *pitch_set = std::clamp((double)pitch, -0.18, 0.51);
                 *pitch_set >> pitch_absolute_pid >> pitch_motor;
+<<<<<<< HEAD
             }
             
+=======
+            } 
+            
+            // else {
+            //     // NOTE: 抽象双头限位
+            //     MUXDEF(
+            //         CONFIG_SENTRY, static float yr; static float ty;
+            //         yr = -UserLib::rad_format(*yaw_set - robot_set->gimbal_sentry_yaw);
+            //         if (config.gimbal_id == 1 && (yr < -2.6 || yr > 0.5)) {
+            //             if (yr > 0)
+            //                 ty = robot_set->gimbal_sentry_yaw - (0.5);
+            //             else
+            //                 ty = robot_set->gimbal_sentry_yaw - (-2.6);
+            //         } else if (config.gimbal_id == 2 && (yr < -0.5 || yr > 2.6)) {
+            //             if (yr > 0)
+            //                 ty = robot_set->gimbal_sentry_yaw - 2.6;
+            //             else
+            //                 ty = robot_set->gimbal_sentry_yaw - (-0.5);
+            //         } else { ty = *yaw_set; }
+
+            //         ty >>
+            //         yaw_absolute_pid >> yaw_motor;
+            //         , *yaw_set >> yaw_absolute_pid >> yaw_motor;)
+
+            //     *pitch_set >> pitch_absolute_pid >> pitch_motor;
+            // }
+            // if (config.gimbal_id == 1)
+            // LOG_INFO("%dpitch set %f\n", config.gimbal_id, *pitch_set);
+            // LOG_INFO("robot id % d\n", robot_set->referee_info.game_robot_status_data.robot_id);
+>>>>>>> 633b791 (fix)
             Robot::SendAutoAimInfo pkg;
             pkg.header = config.header;
             MUXDEF(CONFIG_SENTRY, pkg.yaw = fake_yaw_abs, pkg.yaw = imu.yaw);
