@@ -19,8 +19,6 @@ namespace Gimbal
           yaw_motor(config.yaw_motor_config),
           pitch_motor(config.pitch_motor_config),
           yaw_set(nullptr),
-          another_yaw_set(nullptr),
-          another_pitch_set(nullptr),
           pitch_set(nullptr),
           yaw_rela(nullptr),
           shoot(config.shoot_config) {
@@ -30,10 +28,10 @@ namespace Gimbal
     void GimbalT::init(const std::shared_ptr<Robot::Robot_set> &robot) {
         robot_set = robot;
         shoot.init(robot);
+        // TODO:gimbal_id should delete
         if (config.gimbal_id == 1) {
             yaw_set = &robot_set->gimbalT_1_yaw_set;
-            another_yaw_set = &robot_set->gimbalT_2_yaw_set;
-            another_pitch_set = &robot_set->gimbalT_2_pitch_set;
+           another_pitch_set = &robot_set->gimbalT_2_pitch_set;
             pitch_set = &robot_set->gimbalT_1_pitch_set;
             yaw_rela = &robot_set->gimbalT_1_yaw_reletive;
         } else {

@@ -23,10 +23,6 @@ namespace Gimbal
 
         yaw_absolute_pid = Pid::PidRad(config.yaw_absolute_pid_config, imu.yaw) >> Pid::Invert(-1);
         yaw_relative_pid = Pid::PidRad(config.yaw_relative_pid_config, yaw_relative);
-        yaw_relative_with_two_head_pid =
-            Pid::PidRad(Config::GIMBAL_9025_YAW_RELATIVE_PID_CONFIG, yaw_relative_with_two_head) >>
-            Pid::Invert(-1);
-
         yaw_motor.setCtrl(Pid::PidPosition(config.yaw_rate_pid_config, imu.yaw_rate));
         yaw_set = &robot_set->gimbal_sentry_yaw_set;
 
@@ -71,7 +67,7 @@ namespace Gimbal
                 case Types::ROBOT_MODE::ROBOT_SEARCH:
                     *yaw_set >> yaw_absolute_pid >> yaw_motor;
                     break;
-                default: 0.f >> yaw_relative_with_two_head_pid >> yaw_motor; break;
+                default: 0.f >> yaw_motor; break;
             };
 
             Robot::SendNavigationInfo gimbal_info;
@@ -100,8 +96,6 @@ namespace Gimbal
         yaw_relative = UserLib::rad_format(
             Config::M9025_ECD_TO_RAD *
             ((fp32)yaw_motor.motor_measure.ecd - Config::GIMBAL3_YAW_OFFSET_ECD));
-        yaw_relative_with_two_head =
-            robot_set->gimbalT_1_yaw_reletive + robot_set->gimbalT_2_yaw_reletive;
         robot_set->gimbal_sentry_yaw_reletive = yaw_relative;
         robot_set->gimbal_sentry_yaw = imu.yaw;
     }
