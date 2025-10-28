@@ -9,10 +9,10 @@ int main(int argc, char **argv) {
     robot.load_hardware();
 
     robot.start_init();
+    // robot.robot_set->inited = Types::Init_status::INIT_FINISH;
     robot.init_join();
     LOG_INFO("init finished!\n");
-
-    robot.robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL);
+    robot.robot_set->mode = Types::ROBOT_MODE::ROBOT_NO_FORCE;
 
     robot.start();
     robot.join();

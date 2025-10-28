@@ -97,7 +97,7 @@ namespace Types
 
     enum Init_status
     {
-        INIT_FINISH = MUXDEF(CONFIG_SENTRY, 0x7, 0x1),
+        INIT_FINISH = MUXDEF(CONFIG_SENTRY, 0x3, 0x1),
     };
 
     typedef struct

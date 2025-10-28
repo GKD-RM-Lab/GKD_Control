@@ -26,8 +26,10 @@ namespace Gimbal
         ControllerList yaw_rate_pid;
         ControllerList yaw_absolute_pid;
         ControllerList yaw_relative_pid;
+        ControllerList yaw_relative_with_head_pid;
 
         fp32 yaw_relative = 0.f;
+        fp32 yaw_relative_with_head = 0.f;
         fp32 yaw_gyro = 0.f;
         fp32 yaw_motor_speed = 0.f;
         fp32* yaw_set;

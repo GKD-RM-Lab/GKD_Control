@@ -66,11 +66,11 @@ namespace Config
                 .max_iout =     5000.0f,
             },
             .pitch_rate_pid_config = {
-                .kp =           5500.0f,
-                .ki =           100.0f,
-                .kd =           0.0f,
-                .max_out =      30000.0f,
-                .max_iout =     5000.0f,
+                500.f,
+                100.f,
+                0.2f,
+                30000.0f,
+                15000.0f,
             },
             .yaw_relative_pid_config ={
                 .kp =           8.0f,
