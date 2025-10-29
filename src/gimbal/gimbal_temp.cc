@@ -200,11 +200,7 @@ namespace Gimbal
                 }
                 *pitch_set = std::clamp((double)pitch, -0.18, 0.51);
                 *pitch_set >> pitch_absolute_pid >> pitch_motor;
-<<<<<<< HEAD
             }
-            
-=======
-            } 
         
             Robot::SendAutoAimInfo pkg;
             pkg.header = config.header;
