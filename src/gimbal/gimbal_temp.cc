@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "UI.hpp"
+#include "config_sentry.hpp"
 #include "gimbal/gimbal_config.hpp"
 #include "macro_helpers.hpp"
 #include "robot_controller.hpp"
@@ -119,34 +120,9 @@ namespace Gimbal
             if (delta > 1000)
                 exit(-1);
         }
-
-        // auto start_time = std::chrono::steady_clock::now(); 
-
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
             update_data();
-
-            // auto current_time = std::chrono::steady_clock::now();  
-            
-            // // 1. 将时间差转换为以double为底层类型的秒数
-            // // std::chrono::duration<double> 默认的周期是秒（std::ratio<1>）
-            // std::chrono::duration<double> elapsed_seconds = current_time - start_time;
-            
-            // // 2. 获取秒数值
-            // double elapsed = elapsed_seconds.count();
-
-            // // 4. 使用 std::stringstream 进行输出并控制精度
-            // std::stringstream ss;
-            // // 设置浮点数格式为固定点，精度为小数点后两位
-            // ss << std::fixed << std::setprecision(4) 
-            // << elapsed*1000 << ", "
-            // << "0, "
-            // << yaw_motor.give_current ;
-            
-            // std::string log_content = ss.str();
-            // logger.into_txt("../../../../log/yaw_log.txt", log_content);
-            1.f >> yaw_motor;
-            LOG_INFO("input-%f-output%f\n", yaw_motor.data_.rotor_angular_velocity,(float)yaw_motor.motor_measure_.speed_rpm / 60.f * M_2_PIf);
-            // 0.f >> yaw_relative_pid >> yaw_motor;
+            0.f >> yaw_relative_pid >> yaw_motor;
             // 0.f >> pitch_absolute_pid >> pitch_motor;
             
             
@@ -184,7 +160,7 @@ namespace Gimbal
             // logger.push_value("gimbal.yaw.set", (double)*yaw_set);
             // logger.push_value("gimbal.yaw.imu", (double)imu.yaw);
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
-                yaw_motor.set(0);
+                0.f >> yaw_relative_pid >> yaw_motor;
                 pitch_motor.set(0);
             } else if (robot_set->mode == Types::ROBOT_MODE::ROBOT_SEARCH) {
                 static float delta = 0;
@@ -200,7 +176,25 @@ namespace Gimbal
                 }
                 *pitch_set = std::clamp((double)pitch, -0.18, 0.51);
                 *pitch_set >> pitch_absolute_pid >> pitch_motor;
+            } else {
+                MUXDEF(
+                CONFIG_SENTRY, 
+                    static float yr; static float ty;
+                    yr = -UserLib::rad_format(*yaw_set - robot_set->gimbal_sentry_yaw);
+                    if (config.gimbal_id == 1 && (yr < -2.6 || yr > 0.5)) {
+                        if (yr > 0)
+                            ty = robot_set->gimbal_sentry_yaw - (M_1_PIf / 2.f);
+                        else
+                            ty = robot_set->gimbal_sentry_yaw - (-M_1_PIf / 2.f);
+                    } 
+
+                    ty >>
+                    yaw_absolute_pid >> yaw_motor;
+
+                , *yaw_set >> yaw_absolute_pid >> yaw_motor;)
+                //*pitch_set >> pitch_absolute_pid >> pitch_motor;
             }
+            
         
             Robot::SendAutoAimInfo pkg;
             pkg.header = config.header;

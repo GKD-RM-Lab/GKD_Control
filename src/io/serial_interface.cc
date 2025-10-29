@@ -1,6 +1,7 @@
 #include "serial_interface.hpp"
 
 #include "user_lib.hpp"
+#include "utils.hpp"
 
 namespace IO
 {

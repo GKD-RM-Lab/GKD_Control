@@ -73,9 +73,9 @@ namespace Config
                 15000.0f,
             },
             .yaw_relative_pid_config ={
-                .kp =           8.0f,
-                .ki =           0.0f,
-                .kd =           0.3f,
+                .kp =           25.f,
+                .ki =           0.2f,
+                .kd =           25.f,
                 .max_out =      10.0f,
                 .max_iout =     0.0f,
             },

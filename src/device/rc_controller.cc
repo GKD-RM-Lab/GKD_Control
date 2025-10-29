@@ -26,6 +26,7 @@ namespace Device
     void Rc_Controller::unpack(const Types::ReceivePacket_RC_CTRL &pkg) {
         if (pkg.s1 == S1_DOWN && pkg.s2 == S2_DOWN && pkg.ch4 == ROLL_UP_MAX) {
             inited = true;
+            LOG_INFO("s, ...\n");
         }
 
     // if(delta == 0) {       
@@ -135,7 +136,7 @@ namespace Device
         //     return; 
         // }
         if (inited) {
-             LOG_INFO("rc controller ch1 %d %d %d %d\n", pkg.s1, pkg.s2, pkg.ch1, pkg.ch3);
+             LOG_INFO("rc controller %d %d 右下：%d 左下：%d\n", pkg.s1, pkg.s2, pkg.ch1, pkg.ch3);
             robot_set->vx_set = ((float)pkg.ch3 / RC_SCALE) * CHASSIS_SPEED_SCALE;
             robot_set->vy_set = ((float)pkg.ch2 / RC_SCALE) * CHASSIS_SPEED_SCALE;
 
@@ -161,7 +162,7 @@ namespace Device
 
             IFDEF(
                 CONFIG_SENTRY,
-                if (pkg.s2 == S2_DOWN) {
+                if (pkg.s2 == S2_UP) {
                     robot_set->sentry_follow_gimbal = true;
                     robot_set->friction_open = true;
                     if (pkg.ch4 == ROLL_DOWN_MAX)
