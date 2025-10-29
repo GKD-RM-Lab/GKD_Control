@@ -145,7 +145,7 @@ namespace Gimbal
             // std::string log_content = ss.str();
             // logger.into_txt("../../../../log/yaw_log.txt", log_content);
             1.f >> yaw_motor;
-            LOG_INFO("input-1-output%f\n", (float)yaw_motor.motor_measure_.speed_rpm / 60.f * M_2_PIf);
+            LOG_INFO("input-%f-output%f\n", yaw_motor.data_.rotor_angular_velocity,(float)yaw_motor.motor_measure_.speed_rpm / 60.f * M_2_PIf);
             // 0.f >> yaw_relative_pid >> yaw_motor;
             // 0.f >> pitch_absolute_pid >> pitch_motor;
             
