@@ -11,6 +11,7 @@
 #include "types.hpp"
 #include "user_lib.hpp"
 #include "utils.hpp"
+#include <cmath>
 #include <iomanip>
 namespace Gimbal
 {
@@ -143,7 +144,8 @@ namespace Gimbal
             
             // std::string log_content = ss.str();
             // logger.into_txt("../../../../log/yaw_log.txt", log_content);
-            0.f >> yaw_motor;
+            1.f >> yaw_motor;
+            LOG_INFO("input-1-output%f\n", (float)yaw_motor.motor_measure_.speed_rpm / 60.f * M_2_PIf);
             // 0.f >> yaw_relative_pid >> yaw_motor;
             // 0.f >> pitch_absolute_pid >> pitch_motor;
             
@@ -199,32 +201,7 @@ namespace Gimbal
                 *pitch_set = std::clamp((double)pitch, -0.18, 0.51);
                 *pitch_set >> pitch_absolute_pid >> pitch_motor;
             }
-            //  else {
-            //     // NOTE: 抽象双头限位
-            //     MUXDEF(
-            //         CONFIG_SENTRY, static float yr; static float ty;
-            //         yr = -UserLib::rad_format(*yaw_set - robot_set->gimbal_sentry_yaw);
-            //         if (config.gimbal_id == 1 && (yr < -2.6 || yr > 0.5)) {
-            //             if (yr > 0)
-            //                 ty = robot_set->gimbal_sentry_yaw - (0.5);
-            //             else
-            //                 ty = robot_set->gimbal_sentry_yaw - (-2.6);
-            //         } else if (config.gimbal_id == 2 && (yr < -0.5 || yr > 2.6)) {
-            //             if (yr > 0)
-            //                 ty = robot_set->gimbal_sentry_yaw - 2.6;
-            //             else
-            //                 ty = robot_set->gimbal_sentry_yaw - (-0.5);
-            //         } else { ty = *yaw_set; }
-
-            //         ty >>
-            //         yaw_absolute_pid >> yaw_motor;
-            //         , *yaw_set >> yaw_absolute_pid >> yaw_motor;)
-
-            //     *pitch_set >> pitch_absolute_pid >> pitch_motor;
-            // }
-            // if (config.gimbal_id == 1)
-            // LOG_INFO("%dpitch set %f\n", config.gimbal_id, *pitch_set);
-            // LOG_INFO("robot id % d\n", robot_set->referee_info.game_robot_status_data.robot_id);
+            
             Robot::SendAutoAimInfo pkg;
             pkg.header = config.header;
             MUXDEF(CONFIG_SENTRY, pkg.yaw = fake_yaw_abs, pkg.yaw = imu.yaw);
