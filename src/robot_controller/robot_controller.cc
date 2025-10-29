@@ -5,6 +5,7 @@
 #include "macro_helpers.hpp"
 #include "referee.hpp"
 #include "robot_type_config.hpp"
+#include "utils.hpp"
 
 namespace Robot
 {
@@ -22,16 +23,17 @@ namespace Robot
     Robot_ctrl::~Robot_ctrl() = default;
 
     void Robot_ctrl::start_init() {
+        LOG_INFO("start init\n");
         // NOTE: register motors here
 
         rc_controller.init(robot_set);
-        referee.init(robot_set);
+        // referee.init(robot_set);
         // IFNDEF(CONFIG_SENTRY,
-        super_cap.init(Config::super_cap_can_interface, robot_set);
-        super_cap.set(true, 30);
+        // super_cap.init(Config::super_cap_can_interface, robot_set);
+        // super_cap.set(true, 30);
         //);
         
-        chassis.init(robot_set);
+        // chassis.init(robot_set);
         gimbal.init(robot_set);
         IFDEF(CONFIG_SENTRY, gimbal_sentry.init(robot_set));
 
@@ -43,14 +45,16 @@ namespace Robot
     }
 
     void Robot_ctrl::init_join() {
+        LOG_INFO("init_join\n");
         threads.clear();
     }
 
     void Robot_ctrl::start() {
+        LOG_INFO("start\n");
         threads.emplace_back(&Config::GimbalType::task, &gimbal);
-        threads.emplace_back(&Chassis::Chassis::task, &chassis);
-        threads.emplace_back(&Device::Dji_referee::task, &referee);
-        threads.emplace_back(&Device::Dji_referee::task_ui, &referee);
+        // threads.emplace_back(&Chassis::Chassis::task, &chassis);
+        // threads.emplace_back(&Device::Dji_referee::task, &referee);
+        // threads.emplace_back(&Device::Dji_referee::task_ui, &referee);
         IFDEF(CONFIG_SENTRY, threads.emplace_back(&Gimbal::GimbalT::task, &gimbal_sentry));
         IFDEF(__DEBUG__, threads.emplace_back(&Logger::task, &logger));
     }
@@ -61,6 +65,7 @@ namespace Robot
     }
 
     void Robot_ctrl::load_hardware() {
+        LOG_INFO("load_hardware\n");
         for (auto& name : Config::CanInitList) {
             IO::io<CAN>.insert(name);
         }

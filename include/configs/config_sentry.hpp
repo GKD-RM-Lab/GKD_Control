@@ -56,8 +56,8 @@ namespace Config
 //rm left_head
     const Gimbal::GimbalConfig gimbal_config = {
             .imu_serial_port = "/dev/IMU_SMALL_YAW",
-            .yaw_motor_config = Hardware::DJIMotorConfig(6020, "CAN_GIMBAL", 2),
-            .pitch_motor_config = Hardware::DJIMotorConfig(6020, "CAN_GIMBAL", 1),
+            .yaw_motor_config = Hardware::DJIMotorConfig(6020, "CAN_GIMBAL", 1),
+            .pitch_motor_config = Hardware::DJIMotorConfig(6020, "CAN_GIMBAL", 2),
             .yaw_rate_pid_config = {
                 .kp =           5000.f,
                 .ki =           0.0f,
@@ -66,11 +66,11 @@ namespace Config
                 .max_iout =     5000.0f,
             },
             .pitch_rate_pid_config = {
-                .kp =           5500.0f,
-                .ki =           100.0f,
-                .kd =           0.0f,
-                .max_out =      30000.0f,
-                .max_iout =     5000.0f,
+                500.f,
+                100.f,
+                0.2f,
+                30000.0f,
+                15000.0f,
             },
             .yaw_relative_pid_config ={
                 .kp =           8.0f,
@@ -96,11 +96,11 @@ namespace Config
             .gimbal_motor_dir = 1.0,
             .gimbal_id = 1,
             .ControlTime = 1,
-            .YawOffSet = 716,
+            .YawOffSet = 2475.f,
             .shoot_config = {
-                .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "CAN_GIMBAL", 1, 0.075},
-                .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "CAN_GIMBAL", 2, 0.075},
-                .trigger_motor_config = Hardware::DJIMotorConfig{2006, "CAN_BULLET", 2, 0.075},
+                .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "CAN_BULLET", 1, 0.075},
+                .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "CAN_BULLET", 2, 0.075},
+                .trigger_motor_config = Hardware::DJIMotorConfig{3508, "CAN_GIMBAL", 1, 0.075},
                 .friction_speed_pid_config = Pid::PidConfig{
                     2000.f,       // KP
                     0.05f,     // KI

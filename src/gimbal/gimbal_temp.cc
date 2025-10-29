@@ -11,6 +11,8 @@
 #include "types.hpp"
 #include "user_lib.hpp"
 #include "utils.hpp"
+#include <cmath>
+#include <iomanip>
 namespace Gimbal
 {
     GimbalT::GimbalT(const GimbalConfig &config)
@@ -19,8 +21,6 @@ namespace Gimbal
           yaw_motor(config.yaw_motor_config),
           pitch_motor(config.pitch_motor_config),
           yaw_set(nullptr),
-          another_yaw_set(nullptr),
-          another_pitch_set(nullptr),
           pitch_set(nullptr),
           yaw_rela(nullptr),
           shoot(config.shoot_config) {
@@ -30,16 +30,13 @@ namespace Gimbal
     void GimbalT::init(const std::shared_ptr<Robot::Robot_set> &robot) {
         robot_set = robot;
         shoot.init(robot);
+        // TODO:gimbal_id should delete
         if (config.gimbal_id == 1) {
             yaw_set = &robot_set->gimbalT_1_yaw_set;
-            another_yaw_set = &robot_set->gimbalT_2_yaw_set;
-            another_pitch_set = &robot_set->gimbalT_2_pitch_set;
             pitch_set = &robot_set->gimbalT_1_pitch_set;
             yaw_rela = &robot_set->gimbalT_1_yaw_reletive;
         } else {
             yaw_set = &robot_set->gimbalT_2_yaw_set;
-            another_yaw_set = &robot_set->gimbalT_1_yaw_set;
-            another_pitch_set = &robot_set->gimbalT_1_pitch_set;
             pitch_set = &robot_set->gimbalT_2_pitch_set;
             yaw_rela = &robot_set->gimbalT_2_yaw_reletive;
         }
@@ -83,38 +80,33 @@ namespace Gimbal
                     robot_set->shoot_open |= config.gimbal_id;
                 }
 
-                if ((robot_set->shoot_open & (3 - config.gimbal_id)) == 0) {
-                    *another_yaw_set = vc.yaw_set;
-                    *another_pitch_set = vc.pitch_set;
-                }
-
                 // if (!ISDEF(CONFIG_SENTRY) && !robot_set->auto_aim_status)
                 //     return;
                 *yaw_set = vc.yaw_set;
                 *pitch_set = vc.pitch_set;
             });
 
-        std::thread check_auto_aim([this] {
-            while (true) {
-                if (robot_set->sentry_follow_gimbal) {
-                    IFDEF(
-                        CONFIG_SENTRY, robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL));
-                    continue;
-                }
-                if (std::chrono::steady_clock::now() - receive_auto_aim >
-                    std::chrono::milliseconds(300)) {
-                    robot_set->shoot_open &= ~config.gimbal_id;
-                    robot_set->cv_fire = false;
-                }
-                // LOG_INFO("shoot open %d\n", robot_set->shoot_open);
-                if (robot_set->shoot_open == 0) {
-                    IFDEF(CONFIG_SENTRY, robot_set->set_mode(Types::ROBOT_MODE::ROBOT_SEARCH));
-                }
-                UserLib::sleep_ms(10);
-            }
-        });
+        // std::thread check_auto_aim([this] {
+        //     while (true) {
+        //         if (robot_set->sentry_follow_gimbal) {
+        //             IFDEF(
+        //                 CONFIG_SENTRY, robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL));
+        //             continue;
+        //         }
+        //         if (std::chrono::steady_clock::now() - receive_auto_aim >
+        //             std::chrono::milliseconds(300)) {
+        //             robot_set->shoot_open &= ~config.gimbal_id;
+        //             robot_set->cv_fire = false;
+        //         }
+        //         // LOG_INFO("shoot open %d\n", robot_set->shoot_open);
+        //         if (robot_set->shoot_open == 0) {
+        //             IFDEF(CONFIG_SENTRY, robot_set->set_mode(Types::ROBOT_MODE::ROBOT_SEARCH));
+        //         }
+        //         UserLib::sleep_ms(10);
+        //     }
+        // });
 
-        check_auto_aim.detach();
+        // check_auto_aim.detach();
     }
 
     void GimbalT::init_task() {
@@ -127,14 +119,37 @@ namespace Gimbal
             if (delta > 1000)
                 exit(-1);
         }
+
+        // auto start_time = std::chrono::steady_clock::now(); 
+
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
             update_data();
-            if (config.gimbal_id == 2) {
-                robot_set->inited |= 1 << 1;
-            }
 
-            0.f >> yaw_relative_pid >> yaw_motor;
-            0.f >> pitch_absolute_pid >> pitch_motor;
+            // auto current_time = std::chrono::steady_clock::now();  
+            
+            // // 1. 将时间差转换为以double为底层类型的秒数
+            // // std::chrono::duration<double> 默认的周期是秒（std::ratio<1>）
+            // std::chrono::duration<double> elapsed_seconds = current_time - start_time;
+            
+            // // 2. 获取秒数值
+            // double elapsed = elapsed_seconds.count();
+
+            // // 4. 使用 std::stringstream 进行输出并控制精度
+            // std::stringstream ss;
+            // // 设置浮点数格式为固定点，精度为小数点后两位
+            // ss << std::fixed << std::setprecision(4) 
+            // << elapsed*1000 << ", "
+            // << "0, "
+            // << yaw_motor.give_current ;
+            
+            // std::string log_content = ss.str();
+            // logger.into_txt("../../../../log/yaw_log.txt", log_content);
+            1.f >> yaw_motor;
+            LOG_INFO("input-1-output%f\n", (float)yaw_motor.motor_measure_.speed_rpm / 60.f * M_2_PIf);
+            // 0.f >> yaw_relative_pid >> yaw_motor;
+            // 0.f >> pitch_absolute_pid >> pitch_motor;
+            
+            
             // LOG_INFO(
             //    "imu : %6f %6f %6f %6d\n",
             //    imu.yaw,
@@ -142,22 +157,21 @@ namespace Gimbal
             //    imu.roll,
             //    yaw_motor.motor_measure_.ecd);
 
-            if (fabs(yaw_relative) < Config::GIMBAL_INIT_EXP &&
-                fabs(imu.pitch) < Config::GIMBAL_INIT_EXP) {
+            if (fabs(yaw_relative) < Config::GIMBAL_INIT_EXP 
+            // && fabs(imu.pitch) < Config::GIMBAL_INIT_EXP
+            ) {
                 init_stop_times += 1;
             } else {
                 init_stop_times = 0;
             }
 
+
             MUXDEF(CONFIG_SENTRY, *yaw_set = robot_set->gimbal_sentry_yaw, *yaw_set = imu.yaw);
             *pitch_set = 0;
 
-            if (init_stop_times >= Config::GIMBAL_INIT_STOP_TIME) {
-                if (config.gimbal_id == 1)
-                    robot_set->inited |= 1;
-                else
-                    robot_set->inited |= 1 << 1;
-            }
+            if (init_stop_times >= Config::GIMBAL_INIT_STOP_TIME) 
+                robot_set->inited |= 1;
+            
             UserLib::sleep_ms(config.ControlTime);
         }
     }
@@ -170,8 +184,8 @@ namespace Gimbal
             // logger.push_value("gimbal.yaw.set", (double)*yaw_set);
             // logger.push_value("gimbal.yaw.imu", (double)imu.yaw);
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
-                yaw_motor.give_current = 0;
-                pitch_motor.give_current = 0;
+                yaw_motor.set(0);
+                pitch_motor.set(0);
             } else if (robot_set->mode == Types::ROBOT_MODE::ROBOT_SEARCH) {
                 static float delta = 0;
                 static float delta_1 = 0;
@@ -183,37 +197,11 @@ namespace Gimbal
 
                 if (config.gimbal_id == 1) {
                     yaw >> yaw_relative_pid >> yaw_motor;
-                } else {
-                    -yaw >> yaw_relative_pid >> yaw_motor;
                 }
                 *pitch_set = std::clamp((double)pitch, -0.18, 0.51);
                 *pitch_set >> pitch_absolute_pid >> pitch_motor;
-            } else {
-                // NOTE: 抽象双头限位
-                MUXDEF(
-                    CONFIG_SENTRY, static float yr; static float ty;
-                    yr = -UserLib::rad_format(*yaw_set - robot_set->gimbal_sentry_yaw);
-                    if (config.gimbal_id == 1 && (yr < -2.6 || yr > 0.5)) {
-                        if (yr > 0)
-                            ty = robot_set->gimbal_sentry_yaw - (0.5);
-                        else
-                            ty = robot_set->gimbal_sentry_yaw - (-2.6);
-                    } else if (config.gimbal_id == 2 && (yr < -0.5 || yr > 2.6)) {
-                        if (yr > 0)
-                            ty = robot_set->gimbal_sentry_yaw - 2.6;
-                        else
-                            ty = robot_set->gimbal_sentry_yaw - (-0.5);
-                    } else { ty = *yaw_set; }
-
-                    ty >>
-                    yaw_absolute_pid >> yaw_motor;
-                    , *yaw_set >> yaw_absolute_pid >> yaw_motor;)
-
-                *pitch_set >> pitch_absolute_pid >> pitch_motor;
             }
-            // if (config.gimbal_id == 1)
-            // LOG_INFO("%dpitch set %f\n", config.gimbal_id, *pitch_set);
-            // LOG_INFO("robot id % d\n", robot_set->referee_info.game_robot_status_data.robot_id);
+        
             Robot::SendAutoAimInfo pkg;
             pkg.header = config.header;
             MUXDEF(CONFIG_SENTRY, pkg.yaw = fake_yaw_abs, pkg.yaw = imu.yaw);
@@ -228,6 +216,12 @@ namespace Gimbal
     void GimbalT::update_data() {
         yaw_relative = UserLib::rad_format(
             yaw_motor.data_.rotor_angle - Hardware::DJIMotor::ECD_8192_TO_RAD * config.YawOffSet);
+
+        //LOG_INFO("%f - %f * %f = %f\n", yaw_motor.data_.rotor_angle, Hardware::DJIMotor::ECD_8192_TO_RAD, config.YawOffSet, yaw_relative);
+
+        //auto newYawOffSet = yaw_motor.data_.rotor_angle / Hardware::DJIMotor::ECD_8192_TO_RAD;
+        //LOG_INFO("Yawoffset:%f\n", newYawOffSet);
+            
         yaw_gyro = (std::cos(imu.pitch) * imu.yaw_rate - std::sin(imu.pitch) * imu.roll_rate);
         pitch_gyro = imu.pitch_rate;
         // gimbal sentry follow needs
