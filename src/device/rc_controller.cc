@@ -1,7 +1,9 @@
 #include "device/rc_controller.hpp"
 #include "io.hpp"
+#include "logger.hpp"
 #include "serial_interface.hpp"
 #include "types.hpp"
+#include "utils.hpp"
 
 namespace Device
 {
@@ -133,7 +135,7 @@ namespace Device
         //     return; 
         // }
         if (inited) {
-            // LOG_INFO("rc controller ch1 %d %d %d %d\n", pkg.s1, pkg.s2, pkg.ch1, pkg.ch3);
+             LOG_INFO("rc controller ch1 %d %d %d %d\n", pkg.s1, pkg.s2, pkg.ch1, pkg.ch3);
             robot_set->vx_set = ((float)pkg.ch3 / RC_SCALE) * CHASSIS_SPEED_SCALE;
             robot_set->vy_set = ((float)pkg.ch2 / RC_SCALE) * CHASSIS_SPEED_SCALE;
 

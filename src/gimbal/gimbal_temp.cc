@@ -119,7 +119,7 @@ namespace Gimbal
                 exit(-1);
         }
 
-        //auto start_time = std::chrono::steady_clock::now(); 
+        // auto start_time = std::chrono::steady_clock::now(); 
 
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
             update_data();
@@ -137,14 +137,14 @@ namespace Gimbal
             // std::stringstream ss;
             // // 设置浮点数格式为固定点，精度为小数点后两位
             // ss << std::fixed << std::setprecision(4) 
-            // << elapsed << ", "
+            // << elapsed*1000 << ", "
             // << "0, "
             // << yaw_motor.give_current ;
             
             // std::string log_content = ss.str();
             // logger.into_txt("../../../../log/yaw_log.txt", log_content);
-
-            0.f >> yaw_relative_pid >> yaw_motor;
+            0.f >> yaw_motor;
+            // 0.f >> yaw_relative_pid >> yaw_motor;
             // 0.f >> pitch_absolute_pid >> pitch_motor;
             
             
