@@ -47,7 +47,7 @@ namespace Gimbal
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
             //LOG_INFO("robot_set->inited:%d\n", robot_set->inited);
             update_data();
-            //0.f >> yaw_relative_pid >> yaw_motor;
+            0.f >> yaw_relative_pid >> yaw_motor;
             // LOG_INFO("big yaw %d %f\n", yaw_motor.motor_measure.ecd, yaw_relative);
             // LOG_INFO("yaw r %f\n", yaw_relative);
             *yaw_set = imu.yaw;
@@ -106,12 +106,6 @@ namespace Gimbal
         yaw_relative = UserLib::rad_format(
             Config::M9025_ECD_TO_RAD *
             ((fp32)yaw_motor.motor_measure.ecd - Config::GIMBAL3_YAW_OFFSET_ECD));
-
-        LOG_INFO("%f * (%d - %f)  = %f\n",
-                 Config::M9025_ECD_TO_RAD,
-                 yaw_motor.motor_measure.ecd,
-                 Config::GIMBAL3_YAW_OFFSET_ECD,
-                 yaw_relative);
 
         yaw_relative_with_head =
             robot_set->gimbalT_1_yaw_reletive;

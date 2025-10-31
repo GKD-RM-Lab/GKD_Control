@@ -117,7 +117,7 @@ namespace Gimbal
         }
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
             update_data();
-             //0.f >> yaw_relative_pid >> yaw_motor;
+            0.f >> yaw_relative_pid >> yaw_motor;
             // 0.f >> pitch_absolute_pid >> pitch_motor;
             
             
