@@ -53,7 +53,7 @@ namespace Config
 				.follow_dir = 1,
     };
 
-//rm left_head
+//rm head
     const Gimbal::GimbalConfig gimbal_config = {
             .imu_serial_port = "/dev/IMU_SMALL_YAW",
             .yaw_motor_config = Hardware::DJIMotorConfig(6020, "CAN_GIMBAL", 1),
@@ -74,15 +74,15 @@ namespace Config
             },
             .yaw_relative_pid_config ={
                 .kp =           25.f,
-                .ki =           0.2f,
+                .ki =           1.f,
                 .kd =           25.f,
                 .max_out =      10.0f,
                 .max_iout =     0.0f,
             },
             .yaw_absolute_pid_config = {
-                .kp =           12.0f,
-                .ki =           0.0f,
-                .kd =           0.3f,
+                .kp =           25.f,
+                .ki =           1.f,
+                .kd =           25.f,
                 .max_out =      10.0f,
                 .max_iout =     0.0f,
             },
@@ -121,7 +121,6 @@ namespace Config
             .auto_aim_ip = "127.0.0.1",
             .auto_aim_port = 11453,
         };
-
     
     // NOTE: PID CONFIG
 

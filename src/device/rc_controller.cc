@@ -136,18 +136,17 @@ namespace Device
         //     return; 
         // }
         if (inited) {
-             LOG_INFO("rc controller %d %d 右下：%d 左下：%d\n", pkg.s1, pkg.s2, pkg.ch1, pkg.ch3);
+            LOG_INFO("rc controller %d %d 右下：%d 左下：%d\n", pkg.s1, pkg.s2, pkg.ch1, pkg.ch3);
             robot_set->vx_set = ((float)pkg.ch3 / RC_SCALE) * CHASSIS_SPEED_SCALE;
             robot_set->vy_set = ((float)pkg.ch2 / RC_SCALE) * CHASSIS_SPEED_SCALE;
 
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_SEARCH) {
                 robot_set->gimbal_sentry_yaw_set += ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY;
+                // robot_set->gimbalT_1_yaw_set += ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY;
+                // robot_set->gimbalT_1_pitch_set = ((float)pkg.ch1 / RC_SCALE) * GIMBAL_PITCH_SENSITIVITY;
             } else {
                 robot_set->gimbalT_1_yaw_set += ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY;
                 robot_set->gimbalT_1_pitch_set = ((float)pkg.ch1 / RC_SCALE) * GIMBAL_PITCH_SENSITIVITY;
-                
-                IFDEF(CONFIG_SENTRY, robot_set->gimbalT_2_yaw_set = robot_set->gimbalT_1_yaw_set;
-                    robot_set->gimbalT_2_pitch_set = robot_set->gimbalT_1_pitch_set;)
             }
 
             if (pkg.s1 == S1_UP)

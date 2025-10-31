@@ -13,7 +13,7 @@ namespace Gimbal
     GimbalSentry::GimbalSentry(const GimbalConfig& config)
         : config(config),
           imu(config.imu_serial_port),
-          yaw_motor("CAN_BULLET", 1)
+          yaw_motor("CAN_GIMBAL", 1)
 
     {
     }
@@ -47,7 +47,7 @@ namespace Gimbal
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
             //LOG_INFO("robot_set->inited:%d\n", robot_set->inited);
             update_data();
-            0.f >> yaw_relative_pid >> yaw_motor;
+            //0.f >> yaw_relative_pid >> yaw_motor;
             // LOG_INFO("big yaw %d %f\n", yaw_motor.motor_measure.ecd, yaw_relative);
             // LOG_INFO("yaw r %f\n", yaw_relative);
             *yaw_set = imu.yaw;
@@ -67,13 +67,17 @@ namespace Gimbal
         while (true) {
             update_data();
             switch (robot_set->mode) {
-                case Types::ROBOT_MODE::ROBOT_NO_FORCE: 0 >> yaw_motor; break;
+                case Types::ROBOT_MODE::ROBOT_NO_FORCE: 
+                0 >> yaw_motor; 
+                break;
                 case Types::ROBOT_MODE::ROBOT_FINISH_INIT:
                 case Types::ROBOT_MODE::ROBOT_IDLE:
                 case Types::ROBOT_MODE::ROBOT_SEARCH:
                     *yaw_set >> yaw_absolute_pid >> yaw_motor;
                     break;
-                default: 0.f >> yaw_relative_with_head_pid >> yaw_motor; break;
+                default: 
+                0.f >> yaw_relative_with_head_pid >> yaw_motor; 
+                break;
             };
 
             Robot::SendNavigationInfo gimbal_info;
@@ -102,10 +106,17 @@ namespace Gimbal
         yaw_relative = UserLib::rad_format(
             Config::M9025_ECD_TO_RAD *
             ((fp32)yaw_motor.motor_measure.ecd - Config::GIMBAL3_YAW_OFFSET_ECD));
-        //LOG_INFO("%f * %f - %f = %f\n", Config::M9025_ECD_TO_RAD, (fp32)yaw_motor.motor_measure.ecd, Config::GIMBAL3_YAW_OFFSET_ECD, yaw_relative);
+
+        LOG_INFO("%f * (%d - %f)  = %f\n",
+                 Config::M9025_ECD_TO_RAD,
+                 yaw_motor.motor_measure.ecd,
+                 Config::GIMBAL3_YAW_OFFSET_ECD,
+                 yaw_relative);
+
         yaw_relative_with_head =
             robot_set->gimbalT_1_yaw_reletive;
         robot_set->gimbal_sentry_yaw_reletive = yaw_relative;
         robot_set->gimbal_sentry_yaw = imu.yaw;
+        //LOG_INFO("mode:%d\n", robot_set->mode);
     }
 }  // namespace Gimbal

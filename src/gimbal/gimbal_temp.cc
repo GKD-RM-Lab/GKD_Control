@@ -36,17 +36,12 @@ namespace Gimbal
             yaw_set = &robot_set->gimbalT_1_yaw_set;
             pitch_set = &robot_set->gimbalT_1_pitch_set;
             yaw_rela = &robot_set->gimbalT_1_yaw_reletive;
-        } else {
-            yaw_set = &robot_set->gimbalT_2_yaw_set;
-            pitch_set = &robot_set->gimbalT_2_pitch_set;
-            yaw_rela = &robot_set->gimbalT_2_yaw_reletive;
-        }
+        } 
 
         yaw_motor.setCtrl(Pid::PidPosition(config.yaw_rate_pid_config, yaw_gyro));
         pitch_motor.setCtrl(
             Pid::PidPosition(config.pitch_rate_pid_config, pitch_gyro) >>
             Pid::Invert(config.gimbal_motor_dir));
-
         yaw_relative_pid = Pid::PidRad(config.yaw_relative_pid_config, yaw_relative);
         MUXDEF(
             CONFIG_SENTRY,
@@ -122,7 +117,7 @@ namespace Gimbal
         }
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
             update_data();
-            0.f >> yaw_relative_pid >> yaw_motor;
+             //0.f >> yaw_relative_pid >> yaw_motor;
             // 0.f >> pitch_absolute_pid >> pitch_motor;
             
             
@@ -181,7 +176,7 @@ namespace Gimbal
                 CONFIG_SENTRY, 
                     static float yr; static float ty;
                     yr = -UserLib::rad_format(*yaw_set - robot_set->gimbal_sentry_yaw);
-                    if (config.gimbal_id == 1 && (yr < -2.6 || yr > 0.5)) {
+                    if (config.gimbal_id == 1 && (yr < -M_1_PIf / 2.f || yr > M_1_PIf / 2.f)) {
                         if (yr > 0)
                             ty = robot_set->gimbal_sentry_yaw - (M_1_PIf / 2.f);
                         else
@@ -213,8 +208,8 @@ namespace Gimbal
 
         //LOG_INFO("%f - %f * %f = %f\n", yaw_motor.data_.rotor_angle, Hardware::DJIMotor::ECD_8192_TO_RAD, config.YawOffSet, yaw_relative);
 
-        //auto newYawOffSet = yaw_motor.data_.rotor_angle / Hardware::DJIMotor::ECD_8192_TO_RAD;
-        //LOG_INFO("Yawoffset:%f\n", newYawOffSet);
+        // auto newYawOffSet = yaw_motor.data_.rotor_angle / Hardware::DJIMotor::ECD_8192_TO_RAD;
+        // LOG_INFO("Yawoffset:%f\n", newYawOffSet);
             
         yaw_gyro = (std::cos(imu.pitch) * imu.yaw_rate - std::sin(imu.pitch) * imu.roll_rate);
         pitch_gyro = imu.pitch_rate;

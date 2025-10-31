@@ -39,10 +39,6 @@ namespace Robot
         fp32 gimbalT_1_pitch_set = 0.f;
         fp32 gimbalT_1_yaw_reletive = 0.f;
 
-        // only sentry needs gimbalT_2
-        fp32 gimbalT_2_yaw_set = 0.f;
-        fp32 gimbalT_2_pitch_set = 0.f;
-        fp32 gimbalT_2_yaw_reletive = 0.f;
 
         fp32 gimbal_sentry_yaw_set = 0.f;
         fp32 gimbal_sentry_yaw = 0.f;
