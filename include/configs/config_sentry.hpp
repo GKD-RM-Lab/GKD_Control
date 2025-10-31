@@ -73,15 +73,15 @@ namespace Config
                 15000.0f,
             },
             .yaw_relative_pid_config ={
-                .kp =           25.f,
-                .ki =           1.f,
+                .kp =           25.0f,
+                .ki =           0.0f,
                 .kd =           25.f,
                 .max_out =      10.0f,
                 .max_iout =     0.0f,
             },
             .yaw_absolute_pid_config = {
-                .kp =           25.f,
-                .ki =           1.f,
+                .kp =           25.0f,
+                .ki =           0.0f,
                 .kd =           25.f,
                 .max_out =      10.0f,
                 .max_iout =     0.0f,
@@ -96,7 +96,7 @@ namespace Config
             .gimbal_motor_dir = 1.0,
             .gimbal_id = 1,
             .ControlTime = 1,
-            .YawOffSet = 2475.f,
+            .YawOffSet = 2738.f,
             .shoot_config = {
                 .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "CAN_BULLET", 1, 0.075},
                 .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "CAN_BULLET", 2, 0.075},
@@ -293,7 +293,7 @@ const Gimbal::GimbalConfig gimbal_config = {
     constexpr fp32 GIMBAL2_YAW_OFFSET_ECD = 3366;
     constexpr fp32 GIMBAL2_PITCH_OFFSET_ECD = 3985;
 
-    constexpr fp32 GIMBAL3_YAW_OFFSET_ECD = 11305;
+    constexpr fp32 GIMBAL3_YAW_OFFSET_ECD = 27584;
     constexpr fp32 GIMBAL3_PITCH_OFFSET_ECD = 3985;
 #else
     constexpr fp32 GIMBAL_YAW_OFFSET_ECD = 5424;

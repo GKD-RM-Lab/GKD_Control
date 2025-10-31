@@ -76,7 +76,8 @@ namespace Gimbal
                     *yaw_set >> yaw_absolute_pid >> yaw_motor;
                     break;
                 default: 
-                0.f >> yaw_relative_with_head_pid >> yaw_motor; 
+                robot_set->gimbal_sentry_yaw_set >> yaw_absolute_pid >> yaw_motor; 
+                //LOG_INFO("%f\n", robot_set->gimbal_sentry_yaw_set);
                 break;
             };
 
@@ -106,7 +107,7 @@ namespace Gimbal
         yaw_relative = UserLib::rad_format(
             Config::M9025_ECD_TO_RAD *
             ((fp32)yaw_motor.motor_measure.ecd - Config::GIMBAL3_YAW_OFFSET_ECD));
-
+        LOG_INFO("yaw_motor.motor_measure.ecd:%d\n", yaw_motor.motor_measure.ecd);
         yaw_relative_with_head =
             robot_set->gimbalT_1_yaw_reletive;
         robot_set->gimbal_sentry_yaw_reletive = yaw_relative;
