@@ -33,14 +33,14 @@ namespace Gimbal
         imu.enable();
         yaw_motor.enable();
 
-        // IO::io<SOCKET>["AUTO_AIM_CONTROL"] -> register_callback([this](const
-        // Robot::ReceiveNavigationInfo& vc) {
-        //     // LOG_INFO("navigation receive %f %f\n", vc.vx, vc.vy);
-        //     robot_set->vx_set = vc.vx;
-        //     robot_set->vy_set = vc.vy;
-        // });
+        IO::io<SOCKET>["AUTO_AIM_CONTROL"] -> register_callback([this](const
+        Robot::ReceiveNavigationInfo& vc) {
+            LOG_INFO("navigation receive %f %f\n", vc.vx, vc.vy);
+            robot_set->vx_set = vc.vx;
+            robot_set->vy_set = vc.vy;
+        });
 
-        // IO::io<SOCKET>["AUTO_AIM_CONTROL"]->add_client(0x37, "192.168.10.2", 11453);
+        IO::io<SOCKET>["AUTO_AIM_CONTROL"]->add_client(0x37, "127.0.0.1", 11456);
     }
 
     void GimbalSentry::init_task() {
@@ -87,16 +87,16 @@ namespace Gimbal
             gimbal_info.pitch = imu.pitch;
             gimbal_info.hp = robot_set->referee_info.game_robot_status_data.remain_hp * 1. /
                              robot_set->referee_info.game_robot_status_data.max_hp;
-            gimbal_info.start =
-                (robot_set->referee_info.game_status_data.game_progress & 0x0f) == 4;
+            gimbal_info.start = 1;
+                // (robot_set->referee_info.game_status_data.game_progress & 0x0f) == 4;
 
             // FIXME: random robot_set used
-            if (gimbal_info.start) {
+            if (gimbal_info.start && 0) {
                 robot_set->wz_set = 0.3;
-                robot_set->friction_open = true;
+                robot_set->friction_open = false;
             }
-            // LOG_INFO("game progress %d\n", robot_set->referee_info.game_status_data.game_progress
-            // & 0x0f); IO::io<SOCKET>["AUTO_AIM_CONTROL"]->send(gimbal_info);
+            //LOG_INFO("game progress %d\n", robot_set->referee_info.game_status_data.game_progress & 0x0f); 
+            IO::io<SOCKET>["AUTO_AIM_CONTROL"]->send(gimbal_info);
 
             UserLib::sleep_ms(Config::GIMBAL_CONTROL_TIME);
         }
@@ -107,7 +107,7 @@ namespace Gimbal
         yaw_relative = UserLib::rad_format(
             Config::M9025_ECD_TO_RAD *
             ((fp32)yaw_motor.motor_measure.ecd - Config::GIMBAL3_YAW_OFFSET_ECD));
-        LOG_INFO("yaw_motor.motor_measure.ecd:%d\n", yaw_motor.motor_measure.ecd);
+        //LOG_INFO("yaw_motor.motor_measure.ecd:%d\n", yaw_motor.motor_measure.ecd);
         yaw_relative_with_head =
             robot_set->gimbalT_1_yaw_reletive;
         robot_set->gimbal_sentry_yaw_reletive = yaw_relative;
