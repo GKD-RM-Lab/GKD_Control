@@ -161,9 +161,9 @@ namespace Gimbal
                 static float delta = 0;
                 static float delta_1 = 0;
 
-                float yaw = (sin(delta) - 1) * (M_PIf / 2);
+                float yaw = (sin(delta)) * (2 * M_PIf / 5);
                 float pitch = sin(delta_1) * 0.30 + 0.165;
-                delta += 0.001;
+                delta += 0.01;
                 delta_1 += 0.003;
 
                 if (config.gimbal_id == 1) {
