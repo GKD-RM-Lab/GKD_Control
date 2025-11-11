@@ -155,24 +155,24 @@ namespace Gimbal
             // logger.push_value("gimbal.yaw.set", (double)*yaw_set);
             // logger.push_value("gimbal.yaw.imu", (double)imu.yaw);
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
-                0.f >> yaw_relative_pid >> yaw_motor;
+                yaw_motor.set(0);
                 pitch_motor.set(0);
             } else if (robot_set->mode == Types::ROBOT_MODE::ROBOT_SEARCH) {
-                static float delta = 0;
+                // static float delta = 0;
                 static float delta_1 = 0;
 
-                float yaw = (sin(delta)) * (2 * M_PIf / 5);
+                // float yaw = (sin(delta)) * (2 * M_PIf / 5);
                 float pitch = sin(delta_1) * 0.30 + 0.165;
-                delta += 0.01;
+                // delta += 0.005;
                 delta_1 += 0.003;
 
-                if (config.gimbal_id == 1) {
-                    yaw >> yaw_relative_pid >> yaw_motor;
-                }
+                // if (config.gimbal_id == 1) {
+                //     yaw >> yaw_relative_pid >> yaw_motor;
+                // }
                 *pitch_set = std::clamp((double)pitch, -0.18, 0.51);
-                //*pitch_set >> pitch_absolute_pid >> pitch_motor;
+                *pitch_set >> pitch_absolute_pid >> pitch_motor;
 
-                // 0 >> yaw_relative_pid >> yaw_motor;
+                0 >> yaw_relative_pid >> yaw_motor;
             } else {
                 MUXDEF(
                     CONFIG_SENTRY,
