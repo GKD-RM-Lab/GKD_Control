@@ -5,7 +5,6 @@
 #include <iomanip>
 
 #include "UI.hpp"
-#include "config_sentry.hpp"
 #include "gimbal/gimbal_config.hpp"
 #include "macro_helpers.hpp"
 #include "robot_controller.hpp"
@@ -69,10 +68,10 @@ namespace Gimbal
                     vc.fire,
                     config.gimbal_id);
                 receive_auto_aim = std::chrono::steady_clock::now();
-                if (vc.fire == false)
-                    return;
+                // if (vc.fire == false)
+                //     return;
                 robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL);
-                robot_set->cv_fire = true;
+                robot_set->cv_fire = vc.fire;
                 if (vc.fire && ISDEF(CONFIG_SENTRY)) {
                     robot_set->shoot_open |= config.gimbal_id;
                 }

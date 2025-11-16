@@ -29,24 +29,6 @@ namespace Device
             inited = true;
         }
 
-        // if(delta == 0) {
-        //     logger.push_value("rc.ch0",  pkg.ch0);
-        //     logger.push_value("rc.ch1",  pkg.ch1);
-        //     logger.push_value("rc.ch2",  pkg.ch2);
-        //     logger.push_value("rc.ch3",  pkg.ch3);
-        //     logger.push_value("rc.ch4",  pkg.ch4);
-        //     logger.push_value("rc.s1",  pkg.s1);
-        //     logger.push_value("rc.s2",  pkg.s2);
-        //     logger.push_value("rc.mouse_x",  pkg.mouse_x);
-        //     logger.push_value("rc.mouse_y",  pkg.mouse_y);
-        //     logger.push_value("rc.mouse_z",  pkg.mouse_z);
-        //     logger.push_value("rc.mouse_l",  pkg.mouse_l);
-        //     logger.push_value("rc.mouse_r",  pkg.mouse_r);
-        //     logger.push_value("rc.key",  pkg.key);
-        // } else if(delta == 10) {
-        //     delta = 0;
-        // }
-        // delta++;
 
 #ifndef CONFIG_SENTRY
         float vx = 0, vy = 0;
