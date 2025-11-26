@@ -1,5 +1,6 @@
 #include "chassis/chassis.hpp"
 
+#include <cstdlib>
 #include <string>
 #include <thread>
 #include "logger.hpp"
@@ -91,7 +92,8 @@ namespace Chassis
 
                 for (int i = 0; i < 4; ++i) {
                     if(motors[i].offline()) {
-                        // LOG_ERR("chassis_%d offline\n", i + 1);
+                        LOG_ERR("chassis_%d offline\n", i + 1);
+                        exit(-1);
                     }
                 /*
                 TODO功率限制需要修改，现在直接输出pidout

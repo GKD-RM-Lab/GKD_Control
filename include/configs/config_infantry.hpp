@@ -109,7 +109,7 @@ namespace Config
                 2000.0f,   // MAX_IOUT
             },
             .trigger_speed_pid_config = Pid::PidConfig{
-                3000.0f,    // KP
+                5000.0f,    // KP
                 2.f,      // KI
                 0.f,      // KD
                 10000.0f,  // MAX_OUT
