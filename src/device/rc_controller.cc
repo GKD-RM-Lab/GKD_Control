@@ -139,7 +139,7 @@ namespace Device
 
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_SEARCH) {
                 robot_set->gimbal_sentry_yaw_set += ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY;
-            } else {
+            } else if(!robot_set->auto_aim_status){
                 robot_set->gimbalT_1_yaw_set += ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY;
                 robot_set->gimbalT_1_pitch_set = ((float)pkg.ch1 / RC_SCALE) * GIMBAL_PITCH_SENSITIVITY;
                 

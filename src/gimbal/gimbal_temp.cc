@@ -68,9 +68,10 @@ namespace Gimbal
 
         IO::io<SOCKET>["AUTO_AIM_CONTROL"]->register_callback_key(
             config.header, [this](const Robot::Auto_aim_control &vc) {
-                //LOG_INFO("socket recive %f %f %d %d\n",vc.yaw_set,vc.pitch_set,vc.fire,config.gimbal_id);
+                LOG_INFO("socket recive %f %f %d %d\n",vc.yaw_set,vc.pitch_set,vc.fire,config.gimbal_id);
                 receive_auto_aim = std::chrono::steady_clock::now();
-                if (vc.fire == false)
+                if (robot_set->auto_aim_status) {
+                    if (vc.fire == false)
                     return;
                 robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL);
                 robot_set->cv_fire = true;
@@ -88,6 +89,7 @@ namespace Gimbal
                 //     return;
                 *yaw_set = vc.yaw_set;
                 *pitch_set = vc.pitch_set;
+                }
             });
 
         std::thread check_auto_aim([this] {
@@ -205,8 +207,9 @@ namespace Gimbal
                     yaw_absolute_pid >> yaw_motor;
                     , *yaw_set >> yaw_absolute_pid >> yaw_motor;)
                 //LOG_INFO("mode:%d\n", robot_set->mode);
-                // LOG_INFO("%f\n", *pitch_set);
+                 LOG_INFO("%f\n", *pitch_set);
                 *pitch_set >> pitch_absolute_pid >> pitch_motor;
+                //LOG_INFO("status::%d\n", robot_set->auto_aim_status);
             }
             // if (config.gimbal_id == 1)
             // LOG_INFO("%dpitch set %f\n", config.gimbal_id, *pitch_set);
