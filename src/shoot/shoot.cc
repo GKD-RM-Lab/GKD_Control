@@ -1,16 +1,16 @@
 #include "shoot.hpp"
+
 #include <cmath>
 #include <cstdio>
 #include <iostream>
 
+#include "logger.hpp"
 #include "macro_helpers.hpp"
 #include "pid_controller.hpp"
 #include "robot_type_config.hpp"
 #include "types.hpp"
 #include "user_lib.hpp"
 #include "utils.hpp"
-
-#include "logger.hpp"
 
 namespace Shoot
 {
@@ -21,12 +21,15 @@ namespace Shoot
           right_friction(config.right_friction_motor_config),
           trigger(config.trigger_motor_config),
           gimbal_id(config.gimbal_id) {
-        left_friction.setCtrl(Pid::PidPosition(
-            config.friction_speed_pid_config, left_friction.data_.output_linear_velocity));
-        right_friction.setCtrl(Pid::PidPosition(
-            config.friction_speed_pid_config, right_friction.data_.output_linear_velocity));
-        trigger.setCtrl(Pid::PidPosition(
-            config.trigger_speed_pid_config, trigger.data_.output_angular_velocity));
+        left_friction.setCtrl(
+            Pid::PidPosition(
+                config.friction_speed_pid_config, left_friction.data_.output_linear_velocity));
+        right_friction.setCtrl(
+            Pid::PidPosition(
+                config.friction_speed_pid_config, right_friction.data_.output_linear_velocity));
+        trigger.setCtrl(
+            Pid::PidPosition(
+                config.trigger_speed_pid_config, trigger.data_.output_angular_velocity));
     }
 
     void Shoot::init(const std::shared_ptr<Robot::Robot_set>& robot) {
@@ -59,19 +62,18 @@ namespace Shoot
             // LOG_INFO(
             //     "ramp %f %f\n", friction_ramp.out, right_friction.data_.output_linear_velocity);
 
-          
             left_friction.set(-friction_ramp.out);
             right_friction.set(friction_ramp.out);
-            
 
-            
-            // if(left_friction.data_.output_linear_velocity || right_friction.data_.output_linear_velocity )
+            // if(left_friction.data_.output_linear_velocity ||
+            // right_friction.data_.output_linear_velocity )
             // {
-            //     //LOG_INFO("set: %f,left: %f, right: %f\n", friction_ramp.out, left_friction.data_.output_linear_velocity, right_friction.data_.output_linear_velocity);
-            //     std::stringstream ss;
+            //     //LOG_INFO("set: %f,left: %f, right: %f\n", friction_ramp.out,
+            //     left_friction.data_.output_linear_velocity,
+            //     right_friction.data_.output_linear_velocity); std::stringstream ss;
             //      ss << "set: " << friction_ramp.out
-            //     << ", left: " << left_friction.data_.output_linear_velocity 
-            //     << ", right: " << right_friction.data_.output_linear_velocity 
+            //     << ", left: " << left_friction.data_.output_linear_velocity
+            //     << ", right: " << right_friction.data_.output_linear_velocity
             //     << "\n";
             //     std::string log_content = ss.str();
             //     logger.into_txt("../../../../log/fric_log.txt", log_content);
@@ -101,9 +103,10 @@ namespace Shoot
 
             // if(robot_set->shoot_open)
             // {
-            //     //LOG_INFO("set: %f,left: %f, right: %f\n", friction_ramp.out, left_friction.data_.output_linear_velocity, right_friction.data_.output_linear_velocity);
-            //     std::stringstream ss;
-            //     ss << "set: " << Config::CONTINUE_TRIGGER_SPEED
+            //     //LOG_INFO("set: %f,left: %f, right: %f\n", friction_ramp.out,
+            //     left_friction.data_.output_linear_velocity,
+            //     right_friction.data_.output_linear_velocity); std::stringstream ss; ss << "set: "
+            //     << Config::CONTINUE_TRIGGER_SPEED
             //     << ", trigger: " << trigger.data_.output_angular_velocity
             //     << "\n";
             //     std::string log_content = ss.str();
@@ -120,22 +123,20 @@ namespace Shoot
                     LOG_INFO("jam%d\n", delta++);
                     if (std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now() - timest)
-                            .count() >
-                        50) {
-				isJamFlag = false;
-		    }
-                }else if (isJam()) {
-                    trigger.set(0);
+                            .count() > 50) {
+                        isJamFlag = false;
+                    }
+                } else if (isJam()) {
+                    trigger.set_zero();
                     LOG_INFO("%d\n", trigger.motor_measure_.given_current);
                     LOG_INFO("jam%d\n", delta++);
-                    
+
                     isJamFlag = true;
                     timest = std::chrono::steady_clock::now();
 
                 } else {
                     trigger.set(Config::CONTINUE_TRIGGER_SPEED);
                 }
-
             }
             UserLib::sleep_ms(Config::SHOOT_CONTROL_TIME);
         }
@@ -146,10 +147,8 @@ namespace Shoot
     }
 
     bool Shoot::isFrictionOK() {
-        return 
-            std::abs(left_friction.data_.output_linear_velocity) > 1.5 &&
+        return std::abs(left_friction.data_.output_linear_velocity) > 1.5 &&
                std::abs(right_friction.data_.output_linear_velocity) > 1.5;
-            
     }
-   
+
 }  // namespace Shoot
