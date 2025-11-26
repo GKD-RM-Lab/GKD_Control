@@ -189,8 +189,7 @@ namespace Gimbal
             } else {
                 // NOTE: 抽象双头限位
                 MUXDEF(
-                    CONFIG_SENTRY, static float yr; static float ty;
-                    yr = -UserLib::rad_format(*yaw_set - robot_set->gimbal_sentry_yaw);
+                    CONFIG_SENTRY, static float yr; static flz
                     if (config.gimbal_id == 1 && (yr < -2.6 || yr > 0.5)) {
                         if (yr > 0)
                             ty = robot_set->gimbal_sentry_yaw - (0.5);
@@ -207,7 +206,7 @@ namespace Gimbal
                     yaw_absolute_pid >> yaw_motor;
                     , *yaw_set >> yaw_absolute_pid >> yaw_motor;)
                 //LOG_INFO("mode:%d\n", robot_set->mode);
-                 LOG_INFO("%f\n", *pitch_set);
+                // LOG_INFO("%f\n", *pitch_set);
                 *pitch_set >> pitch_absolute_pid >> pitch_motor;
                 //LOG_INFO("status::%d\n", robot_set->auto_aim_status);
             }

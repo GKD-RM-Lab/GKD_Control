@@ -45,7 +45,7 @@ namespace IO
             if (init_flag) {
                 // read CAN frame
                 if (read(soket_id, &frame_r, sizeof(can_frame)) <= 0) {
-                    LOG_ERR("Error reading CAN frame");
+                    LOG_ERR("Error reading CAN frame\n");
                     return Status::ERROR;
                 } else {
                     // printf("not reading!\n");

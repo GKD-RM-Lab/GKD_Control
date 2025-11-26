@@ -1,6 +1,7 @@
 #include "dji_motor.hpp"
 
 #include "io.hpp"
+#include "utils.hpp"
 
 #include <mutex>
 #include <chrono>
@@ -71,6 +72,10 @@ namespace Hardware {
     void DJIMotor::set(float x) {
         x = x >> controller;
         give_current = static_cast<int16_t>(x);
+    }
+
+     void DJIMotor::set_zero() {
+        give_current = static_cast<int16_t>(0);
     }
 
     void DJIMotor::enable() {

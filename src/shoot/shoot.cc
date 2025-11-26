@@ -1,10 +1,12 @@
 #include "shoot.hpp"
 #include <cmath>
+#include <cstdio>
 #include <iostream>
 
 #include "macro_helpers.hpp"
 #include "pid_controller.hpp"
 #include "robot_type_config.hpp"
+#include "types.hpp"
 #include "user_lib.hpp"
 #include "utils.hpp"
 
@@ -36,13 +38,16 @@ namespace Shoot
     }
 
     [[noreturn]] void Shoot::task() {
+        static int delta = 0;
+        auto timest = std::chrono::steady_clock::now();
+        bool isJamFlag = false;
         while (true) {
+            // LOG_INFO("%d\n", trigger.motor_measure_.given_current);
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
                 left_friction.set(0);
                 right_friction.set(0);
                 trigger.set(0);
             }
-
             friction_ramp.update(robot_set->friction_open ? Config::FRICTION_MAX_SPEED : 0.f);
 
             // friction really open?
@@ -53,8 +58,13 @@ namespace Shoot
                     : true;
             // LOG_INFO(
             //     "ramp %f %f\n", friction_ramp.out, right_friction.data_.output_linear_velocity);
+
+          
             left_friction.set(-friction_ramp.out);
             right_friction.set(friction_ramp.out);
+            
+
+            
             // if(left_friction.data_.output_linear_velocity || right_friction.data_.output_linear_velocity )
             // {
             //     //LOG_INFO("set: %f,left: %f, right: %f\n", friction_ramp.out, left_friction.data_.output_linear_velocity, right_friction.data_.output_linear_velocity);
@@ -89,12 +99,43 @@ namespace Shoot
             //     robot_set->referee_info.power_heat_data.shooter_id_1_17_mm_cooling_heat,
             //     robot_set->referee_info.game_robot_status_data.shooter_cooling_limit);
 
+            // if(robot_set->shoot_open)
+            // {
+            //     //LOG_INFO("set: %f,left: %f, right: %f\n", friction_ramp.out, left_friction.data_.output_linear_velocity, right_friction.data_.output_linear_velocity);
+            //     std::stringstream ss;
+            //     ss << "set: " << Config::CONTINUE_TRIGGER_SPEED
+            //     << ", trigger: " << trigger.data_.output_angular_velocity
+            //     << "\n";
+            //     std::string log_content = ss.str();
+            //     logger.into_txt("../../../../log/trigger_log.txt", log_content);
+            // }
+
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE ||
                 !(robot_set->shoot_open & gimbal_id) || !referee_fire_allowance ||
-                !robot_set->friction_real_state) {
-                trigger.set(0);
+                !robot_set->friction_real_state || !isFrictionOK()) {
+                trigger.set_zero();
             } else {
-                trigger.set(Config::CONTINUE_TRIGGER_SPEED);
+                if (isJamFlag) {
+                    LOG_INFO("%d\n", trigger.motor_measure_.given_current);
+                    LOG_INFO("jam%d\n", delta++);
+                    if (std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now() - timest)
+                            .count() >
+                        50) {
+				isJamFlag = false;
+		    }
+                }else if (isJam()) {
+                    trigger.set(0);
+                    LOG_INFO("%d\n", trigger.motor_measure_.given_current);
+                    LOG_INFO("jam%d\n", delta++);
+                    
+                    isJamFlag = true;
+                    timest = std::chrono::steady_clock::now();
+
+                } else {
+                    trigger.set(Config::CONTINUE_TRIGGER_SPEED);
+                }
+
             }
             UserLib::sleep_ms(Config::SHOOT_CONTROL_TIME);
         }
@@ -103,4 +144,12 @@ namespace Shoot
     bool Shoot::isJam() {
         return trigger.motor_measure_.given_current > 4000 && trigger.motor_measure_.speed_rpm < 1;
     }
+
+    bool Shoot::isFrictionOK() {
+        return 
+            std::abs(left_friction.data_.output_linear_velocity) > 1.5 &&
+               std::abs(right_friction.data_.output_linear_velocity) > 1.5;
+            
+    }
+   
 }  // namespace Shoot

@@ -120,6 +120,8 @@ namespace Hardware {
         void set(float x) override;
 
         void enable();
+
+        void set_zero();
     };
 
     namespace DJIMotorManager {

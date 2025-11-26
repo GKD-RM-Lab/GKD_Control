@@ -163,7 +163,7 @@ namespace Device
                     robot_set->sentry_follow_gimbal = true;
                     robot_set->friction_open = true;
                     if (pkg.ch4 == ROLL_DOWN_MAX)
-                        robot_set->shoot_open = SHOOT_PERMISSION_BOTH;
+                        robot_set->shoot_open = SHOOT_PERMISSION_GIMBAL1s;
                     else
                         robot_set->shoot_open = SHOOT_PERMISSION_NONE;
                 } else {

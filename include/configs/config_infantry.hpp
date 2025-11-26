@@ -102,16 +102,16 @@ namespace Config
             .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 2, 0.075},
             .trigger_motor_config = Hardware::DJIMotorConfig{2006, "can0", 3, 0.075},
             .friction_speed_pid_config = Pid::PidConfig{
-                2000.f,       // KP
+                8000.f,       // KP
                 0.05f,     // KI
-                10.0f,     // KD
+                18.0f,     // KD
                 16000.0f,  // MAX_OUT
                 2000.0f,   // MAX_IOUT
             },
             .trigger_speed_pid_config = Pid::PidConfig{
-                800.0f,    // KP
-                0.5f,      // KI
-                0.0f,      // KD
+                3000.0f,    // KP
+                2.f,      // KI
+                0.f,      // KD
                 10000.0f,  // MAX_OUT
                 9000.0f,   // MAX_IOUT
             },
@@ -225,6 +225,6 @@ namespace Config
     constexpr uint32_t GIMBAL_CONTROL_TIME = 1;
     constexpr uint32_t SHOOT_CONTROL_TIME = 1;
 
-    constexpr uint32_t DEFAULT_OFFLINE_TIME = 100;
+    constexpr uint32_t DEFAULT_OFFLINE_TIME = 1000;
 
 }  // namespace Config

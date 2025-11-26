@@ -163,4 +163,32 @@ namespace Types
     } ramp_t;
 }  // namespace Types
 
+#define KEY_D 0x1
+#define KEY_A 0x2
+#define KEY_S 0x4
+#define KEY_W 0x8
+#define KEY_R 0x40
+#define KEY_F 0x80
+#define KEY_PRESS 0xff
+
+#define ROLL_DOWN_MAX 660
+#define ROLL_UP_MAX -660
+#define S1_UP 1
+#define S1_DOWN 2
+#define S1_MIDDLE 3
+#define S2_UP 1
+#define S2_DOWN 2
+#define S2_MIDDLE 3
+
+#define RC_SCALE  660.0f
+#define CHASSIS_SPEED_SCALE             3.0f
+#define GIMBAL_YAW_SENSITIVITY          (1.0f / 200.0f)
+#define GIMBAL_PITCH_SENSITIVITY        0.3f
+
+#define SHOOT_PERMISSION_NONE     0  // 无射击权限  
+#define SHOOT_PERMISSION_GIMBAL1  1  // 云台1射击权限  
+#define SHOOT_PERMISSION_GIMBAL2  2  // 云台2射击权限    
+#define SHOOT_PERMISSION_BOTH     3  // 双云台射击权限
+
+
 #endif
