@@ -4,10 +4,7 @@ build/
 *.a
 .vscode
 compile_commands.json
-log.txt
-scripts/*.txt
 cmake-build-debug
 .idea
 .xmake
 .venv
-.scripts/*
