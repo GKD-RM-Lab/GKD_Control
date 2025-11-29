@@ -87,9 +87,9 @@ namespace Config
                 .max_iout =     0.0f,
             },
             .pitch_absolute_pid_config = {
-                .kp =           15.0f,
+                .kp =           10.f,  
                 .ki =           0.0f,
-                .kd =           10.0f,
+                .kd =           15.0f,  
                 .max_out =      10.0f,
                 .max_iout =     0.0f,
             },
@@ -281,7 +281,7 @@ const Gimbal::GimbalConfig gimbal_config = {
     constexpr fp32 CHASSIS_MOTOR_RPM_TO_VECTOR_SEN = 0.000415809748903494517209f;
     constexpr fp32 SHOOT_MOTOR_RPM_TO_SPEED = 0.00290888208665721596153948461415f;
     constexpr fp32 M6020_ECD_TO_RAD = 2.f * M_PIf / 8192.f;
-    constexpr fp32 M9025_ECD_TO_RAD = 2.f * M_PIf / 65535.f;
+    constexpr fp32 M9025_ECD_TO_RAD = 2.f * M_PIf / 51732.f;
     constexpr fp32 RPM_TO_RAD_S = 2.f * M_PIf / 60.f;
     constexpr fp32 temp = CHASSIS_MOTOR_RPM_TO_VECTOR_SEN / (RPM_TO_RAD_S / 19.f);
     constexpr fp32 CHASSIS_CONTROL_FREQUENCE = 500.0f;
@@ -293,7 +293,7 @@ const Gimbal::GimbalConfig gimbal_config = {
     constexpr fp32 GIMBAL2_YAW_OFFSET_ECD = 3366;
     constexpr fp32 GIMBAL2_PITCH_OFFSET_ECD = 3985;
 
-    constexpr fp32 GIMBAL3_YAW_OFFSET_ECD = 27584;
+    constexpr fp32 GIMBAL3_YAW_OFFSET_ECD = 51572;
     constexpr fp32 GIMBAL3_PITCH_OFFSET_ECD = 3985;
 #else
     constexpr fp32 GIMBAL_YAW_OFFSET_ECD = 5424;

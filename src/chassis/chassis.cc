@@ -48,7 +48,7 @@ namespace Chassis
         std::jthread power_daemon(&Power::Manager::powerDaemon, &power_manager);
         while (true) {
             decomposition_speed();
-            //LOG_INFO("mode: %d\n", robot_set->mode);
+            // LOG_INFO("mode: %d\n", robot_set->mode);
             //LOG_INFO("chassis.wheel_speed: %f, %f, %f, %f\n", wheel_speed[0], wheel_speed[1], wheel_speed[2], wheel_speed[3]);
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
                 for (auto &motor : motors) {
@@ -107,6 +107,7 @@ namespace Chassis
     void Chassis::decomposition_speed() {
         if (robot_set->mode != Types::ROBOT_MODE::ROBOT_NO_FORCE) {
             fp32 sin_yaw, cos_yaw;
+            LOG_INFO("chassis:%f\n", robot_set->gimbal_sentry_yaw_reletive);
             MUXDEF(
                 CONFIG_SENTRY,
                 sincosf(robot_set->gimbal_sentry_yaw_reletive, &sin_yaw, &cos_yaw),

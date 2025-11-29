@@ -166,7 +166,6 @@ namespace Robot
     {
         uint8_t header;
         float yaw;
-        float pitch;
         float hp;
         bool start;
     } __attribute__((packed));

@@ -13,10 +13,8 @@ namespace Robot
     Robot_ctrl::Robot_ctrl()
         : rc_controller(Config::rc_controller_serial),
           gimbal(Config::gimbal_config),
-          chassis(Config::chassis_config) IFDEF(
-            CONFIG_SENTRY, 
-            ,
-            gimbal_head(Config::gimbal_head_config)) {
+          chassis(Config::chassis_config)
+              IFDEF(CONFIG_SENTRY, , gimbal_head(Config::gimbal_head_config)) {
         robot_set = std::make_shared<Robot_set>();
     }
 
@@ -32,7 +30,7 @@ namespace Robot
         // super_cap.init(Config::super_cap_can_interface, robot_set);
         // super_cap.set(true, 30);
         //);
-        
+
         chassis.init(robot_set);
         gimbal.init(robot_set);
         IFDEF(CONFIG_SENTRY, gimbal_head.init(robot_set));

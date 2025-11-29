@@ -64,7 +64,7 @@ namespace IO
         client.sin_addr.s_addr = inet_addr(ip.c_str());
         client.sin_port = htons(port);
         clients.insert(std::pair<uint8_t, sockaddr_in>(header, client));
-        //LOG_INFO("ip %s, port %d\n", ip.c_str(), port);
+        LOG_INFO("ip %s, port %d\n", ip.c_str(), port);
     }
 
     Server_socket_interface::~Server_socket_interface() {

@@ -67,6 +67,7 @@ namespace Shoot
             //     logger.into_txt("../../../../log/fric_log.txt", log_content);
 
             // }
+            // FIXME: random heat used here
             bool shoot_heat = true;
 
             bool remain_bullet = MUXDEF(

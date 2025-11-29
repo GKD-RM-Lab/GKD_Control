@@ -1,6 +1,8 @@
 #include "device/rc_controller.hpp"
+
 #include "io.hpp"
 #include "logger.hpp"
+#include "macro_helpers.hpp"
 #include "serial_interface.hpp"
 #include "types.hpp"
 #include "utils.hpp"
@@ -8,10 +10,10 @@
 namespace Device
 {
 
-    Rc_Controller::Rc_Controller(const std::string &serial_name) : serial_name(serial_name) {
+    Rc_Controller::Rc_Controller(const std::string& serial_name) : serial_name(serial_name) {
     }
 
-    void Rc_Controller::init(const std::shared_ptr<Robot::Robot_set> &robot) {
+    void Rc_Controller::init(const std::shared_ptr<Robot::Robot_set>& robot) {
         robot_set = robot;
         auto serial_interface = IO::io<SERIAL>[serial_name];
         if (serial_interface == nullptr) {
@@ -19,35 +21,17 @@ namespace Device
             return;
         }
         serial_interface->register_callback<Types::ReceivePacket_RC_CTRL>(
-            [&](const Types::ReceivePacket_RC_CTRL &rp) { unpack(rp); });
+            [&](const Types::ReceivePacket_RC_CTRL& rp) { unpack(rp); });
         delta = 0;
     }
 
-    void Rc_Controller::unpack(const Types::ReceivePacket_RC_CTRL &pkg) {
+    void Rc_Controller::unpack(const Types::ReceivePacket_RC_CTRL& pkg) {
         if (pkg.s1 == S1_DOWN && pkg.s2 == S2_DOWN && pkg.ch4 == ROLL_UP_MAX) {
             inited = true;
         }
 
-    // if(delta == 0) {       
-    //     logger.push_value("rc.ch0",  pkg.ch0);
-    //     logger.push_value("rc.ch1",  pkg.ch1);
-    //     logger.push_value("rc.ch2",  pkg.ch2);
-    //     logger.push_value("rc.ch3",  pkg.ch3);
-    //     logger.push_value("rc.ch4",  pkg.ch4);
-    //     logger.push_value("rc.s1",  pkg.s1);
-    //     logger.push_value("rc.s2",  pkg.s2);
-    //     logger.push_value("rc.mouse_x",  pkg.mouse_x);
-    //     logger.push_value("rc.mouse_y",  pkg.mouse_y);
-    //     logger.push_value("rc.mouse_z",  pkg.mouse_z);
-    //     logger.push_value("rc.mouse_l",  pkg.mouse_l);
-    //     logger.push_value("rc.mouse_r",  pkg.mouse_r);
-    //     logger.push_value("rc.key",  pkg.key);
-    // } else if(delta == 10) {
-    //     delta = 0;
-    // }
-    // delta++;
 
-#ifndef CONFIG_SENTRY 
+#ifndef CONFIG_SENTRY
         float vx = 0, vy = 0;
         float speed = 1;
 
@@ -94,7 +78,6 @@ namespace Device
             friction_key_pressed_last = false;
         }
 
-
         if (pkg.mouse_r || (pkg.s1 == S1_DOWN && pkg.s2 == S2_UP)) {
             robot_set->auto_aim_status = true;
             // LOG_INFO("auto aim status : %d\n", pkg.s1);
@@ -112,11 +95,8 @@ namespace Device
             robot_set->gimbalT_1_yaw_set += pkg.mouse_x / 10000.;
             robot_set->gimbalT_1_pitch_set += pkg.mouse_y / 10000.;
             robot_set->gimbalT_1_pitch_set =
-                std::clamp(robot_set->gimbalT_1_pitch_set, -0.3f, 0.3f); 
+                std::clamp(robot_set->gimbalT_1_pitch_set, -0.3f, 0.3f);
         }
-
-
-
 
 #endif
 
@@ -126,26 +106,35 @@ namespace Device
         }
 
         if (use_key) {
-            return; 
+            return;
         }
-            
 
         // auto-aim, disable control
         // if (pkg.s1 == S1_DOWN) {
-        //     return; 
+        //     return;
         // }
         if (inited) {
-            //LOG_INFO("rc controller %d %d 右下：%d 左下：%d\n", pkg.s1, pkg.s2, pkg.ch1, pkg.ch3);
+            // LOG_INFO("rc controller %d %d 右下：%d 左下：%d\n", pkg.s1, pkg.s2, pkg.ch1,
+            // pkg.ch3);
             robot_set->vx_set = ((float)pkg.ch3 / RC_SCALE) * CHASSIS_SPEED_SCALE;
             robot_set->vy_set = ((float)pkg.ch2 / RC_SCALE) * CHASSIS_SPEED_SCALE;
 
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_SEARCH) {
-                robot_set->gimbal_sentry_yaw_set += ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY;
-                // robot_set->gimbalT_1_yaw_set += ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY;
-                // robot_set->gimbalT_1_pitch_set = ((float)pkg.ch1 / RC_SCALE) * GIMBAL_PITCH_SENSITIVITY;
+                robot_set->gimbal_sentry_yaw_set +=
+                    ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY;
+                // robot_set->gimbalT_1_yaw_set += ((float)pkg.ch0 / RC_SCALE) *
+                // GIMBAL_YAW_SENSITIVITY;
+                // robot_set->gimbalT_1_pitch_set =
+                //     ((float)pkg.ch1 / RC_SCALE) * GIMBAL_PITCH_SENSITIVITY;
             } else {
-                robot_set->gimbalT_1_yaw_set += ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY;
-                robot_set->gimbalT_1_pitch_set = ((float)pkg.ch1 / RC_SCALE) * GIMBAL_PITCH_SENSITIVITY;
+                MUXDEF(CONFIG_SENTRY, 
+                         robot_set->gimbal_sentry_yaw_set +=
+                             ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY,
+                        robot_set->gimbalT_1_yaw_set += 
+                            ((float)pkg.ch0 / RC_SCALE) * GIMBAL_YAW_SENSITIVITY);
+                
+                robot_set->gimbalT_1_pitch_set =
+                    ((float)pkg.ch1 / RC_SCALE) * GIMBAL_PITCH_SENSITIVITY;
             }
 
             if (pkg.s1 == S1_UP)
