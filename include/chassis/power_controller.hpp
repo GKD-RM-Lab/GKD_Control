@@ -57,12 +57,12 @@ namespace Power
      * choose HP_FIRST chassis type conservatively, except for sentry
      */
     constexpr static uint8_t maxLevel = 11U; //最高等级
-    constexpr static uint8_t HeroChassisPowerLimit_HP_FIRST[maxLevel] = { 0,   55U,  60U, 65U,
-                                                                          70U, 75U,  80U, 85U,
-                                                                          90U, 100U, 120U }; // 英雄各等级功率限制
-    constexpr static uint8_t InfantryChassisPowerLimit_HP_FIRST[maxLevel] = { 0,   45U, 50U, 55U,
-                                                                              60U, 65U, 70U, 75U,
-                                                                              80U, 90U, 100U };// 步兵各等级功率限制
+    constexpr static uint8_t HeroChassisPowerLimit_HP_FIRST[maxLevel] = { 100U,   100U,  100U, 100U,
+                                                                          100U, 100U,  100U, 100U,
+                                                                          100U, 100U, 100U }; // 英雄各等级功率限制
+    constexpr static uint8_t InfantryChassisPowerLimit_HP_FIRST[maxLevel] = { 75U,   75U, 75U, 75U,
+                                                                              75U, 75U, 75U, 75U,
+                                                                              75U, 75U, 75U };// 步兵各等级功率限制
     constexpr static uint8_t SentryChassisPowerLimit = 100U;
 
     enum class Division
