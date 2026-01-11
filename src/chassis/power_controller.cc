@@ -96,134 +96,82 @@ namespace Power
 
 
 std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
-    std::array<float, 4> newTorqueCurrent; 
-    float torqueConst = 0.3 * ((float)187 / 3591);
-    float k0 =
-        torqueConst * 20 / 16384;  // torque current rate of the motor, defined as Nm/Output
-
-    float sumCmdPower = 0.0f;
-    std::array<float, 4> cmdPower;
-
-    float sumError = 0.0f;
-    std::array<float, 4> error;
+    std::array<float, 4> newTorqueCurrent;
+    
+    float torqueConst = 0.3f * ((float)187.0f / 3591.0f);
+    float k0 = torqueConst * 20.0f / 16384.0f; // Torque per LSb current
 
     float maxPower = std::clamp(userConfiguredMaxPower, fullMaxPower, baseMaxPower);
-
-    float allocatablePower = maxPower;
-    float sumPowerRequired = 0.0f;
-#if USE_DEBUG
-    static float newCmdPower;
-#endif
-
-    for (int i = 0; i < 4; i++) {
-        PowerObj *p = objs[i];
-        cmdPower[i] = p->pidOutput * k0 * p->curAv + fabs(p->curAv) * k1 +
-                      p->pidOutput * k0 * p->pidOutput * k0 * k2 + k3 / static_cast<float>(4);
-        sumCmdPower += cmdPower[i];
-        error[i] = fabs(p->setAv - p->curAv);
-        if (floatEqual(cmdPower[i], 0.0f) || cmdPower[i] < 0.0f) {
-            allocatablePower += -cmdPower[i];
-        } else {
-            sumError += error[i];
-            sumPowerRequired += cmdPower[i];
-        }
-    }
-
-    // LOG_INFO(
-    //     "sum power: %f, Max power: %f, Measured: %f, CapEnergy: %d, buffer_energy %d %d\n",
-    //     sumCmdPower,
-    //     maxPower,
-    //     measuredPower,
-    //     robot_set->super_cap_info.capEnergy,
-    //     robot_set->referee_info.game_robot_status_data.robot_id,
-    //     robot_set->referee_info.game_robot_status_data.robot_level);
-
-    // {       
-    //     logger.push_value("chassis.pc.sum power",  sumCmdPower);
-    //     logger.push_value("chassis.pc.max power",  maxPower);
-    //     logger.push_value("chassis.pc.measured power",  measuredPower);
-    //     logger.push_value("chassis.pc.cap energy",  robot_set->super_cap_info.capEnergy);
-    //     logger.push_value("chassis.pc.robot id",  robot_set->referee_info.game_robot_status_data.robot_id);
-    //     logger.push_value("chassis.pc.robot level",  robot_set->referee_info.game_robot_status_data.robot_level);
-    // }
-
-    // LOG_INFO("k1 %f k2 %f k3 %f max %f\n", k1, k2, k3, maxPower);
-
-    // LOG_INFO("referee level %d\n",
-    // robot_set->referee_info.game_robot_status_data.robot_level);
-
-    //      update power status
+    
     powerStatus.maxPowerLimited = maxPower;
-    powerStatus.sumPowerCmd_before_clamp = sumCmdPower;
 
-    if (sumCmdPower > maxPower) {
-        float errorConfidence;
-        if (sumError > error_powerDistribution_set) {
-            errorConfidence = 1.0f;
-        } else if (sumError > prop_powerDistribution_set) {
-            errorConfidence = std::clamp(
-                (sumError - prop_powerDistribution_set) /
-                    (error_powerDistribution_set - prop_powerDistribution_set),
-                0.0f,
-                1.0f);
-        } else {
-            errorConfidence = 0.0f;
-        }
-        for (int i = 0; i < 4; i++) {
-            PowerObj *p = objs[i];
-            if (floatEqual(cmdPower[i], 0.0f) || cmdPower[i] < 0.0f) {
-                newTorqueCurrent[i] = p->pidOutput;
-                continue;
-            }
-            float powerWeight_Error = fabs(p->setAv - p->curAv) / sumError;
-            float powerWeight_Prop = cmdPower[i] / sumPowerRequired;
-            float powerWeight = errorConfidence * powerWeight_Error +
-                                (1.0f - errorConfidence) * powerWeight_Prop;
-            float delta =
-                p->curAv * p->curAv - 4.0f * k2 *
-                                          (k1 * fabs(p->curAv) + k3 / static_cast<float>(4) -
-                                           powerWeight * allocatablePower);
+    float A = 0.0f;          // 二次项系数 (与电流平方相关)
+    float B = 0.0f;          // 一次项系数 (与机械功率相关)
+    float const_power = 0.0f;// 不可控的恒定功率损耗 (摩擦 + 静态)
+    float sumPower_original = 0.0f; // 原始PID指令对应的总预测功率
 
-            if (floatEqual(delta, 0.0f))  // repeat roots
-            {
-                newTorqueCurrent[i] = -p->curAv / (2.0f * k2) / k0;
-            } else if (delta > 0.0f)  // distinct roots
-            {
-                newTorqueCurrent[i] = p->pidOutput > 0.0f
-                                          ? (-p->curAv + sqrtf(delta)) / (2.0f * k2) / k0
-                                          : (-p->curAv - sqrtf(delta)) / (2.0f * k2) / k0;
-            } else  // imaginary roots
-            {
-                newTorqueCurrent[i] = -p->curAv / (2.0f * k2) / k0;
-            }
-
-            newTorqueCurrent[i] =
-                std::clamp(newTorqueCurrent[i], -p->pidMaxOutput, p->pidMaxOutput);
-        }
-    } else {
-        for (int i = 0; i < 4; i++) {
-            newTorqueCurrent[i] = objs[i]->pidOutput;
-        }
-    }
-
-    // #if USE_DEBUG
-    float newCmdPower = 0.0f;
     for (int i = 0; i < 4; i++) {
-        PowerObj *p = objs[i];
-        newCmdPower += newTorqueCurrent[i] * k0 * p->curAv + fabs(p->curAv) * k1 +
-                       newTorqueCurrent[i] * k0 * newTorqueCurrent[i] * k0 * k2 + k3 / 4.0f;
+        float i_pid = objs[i]->pidOutput; // 原始 PID 电流
+        float w = objs[i]->curAv;         // 当前转速 (rad/s)
+        
+        // 预计算项
+        float torque = i_pid * k0;
+        float friction = k1 * fabsf(w);
+        float static_loss = k3 / 4.0f;
+        
+        // 累加方程系数
+        A += torque * torque * k2; 
+        
+        // 机械功率项 P = Torque * w
+        B += torque * w;
+        
+        // 恒定损耗项
+        const_power += friction + static_loss;
+        
+        // 计算如果不限制时的原始总功率（用于日志或判断）
+        sumPower_original += torque * torque * k2 + torque * w + friction + static_loss;
     }
-    // LOG_INFO(
-    //     "sumPower: %f, NewCMDPower power: %f, measuredPower: %f, capEnergy: %d %f\n",
-    //     sumPowerRequired,
-    //     newCmdPower,
-    //     robot_set->super_cap_info.chassisPower,
-    //     robot_set->super_cap_info.capEnergy,
-    //     refereeMaxPower);
 
-    //      #endif
+    powerStatus.sumPowerCmd_before_clamp = sumPower_original;
 
-    return newTorqueCurrent; // 直接返回 std::array
+    float W = const_power - maxPower;
+    float K = 1.0f; 
+
+    // 原始功率未超限
+    if (sumPower_original <= maxPower) {
+        K = 1.0f;
+    }
+    // 仅克服摩擦力就已经超功率了 
+    else if (W > 0.0f) {
+        K = 0.0f;
+    }
+    // 需要缩放 (A*K^2 + B*K + W = 0)
+    else {
+        if (fabsf(A) < 1e-7f) {
+            if (fabsf(B) < 1e-7f) K = 0.0f;
+            else K = -W / B;
+        } else {
+            float delta = B * B - 4.0f * A * W;
+            if (delta < 0.0f) {
+                K = 0.0f; 
+            } else {
+                float sqrt_delta = sqrtf(delta);
+                K = (-B + sqrt_delta) / (2.0f * A);
+            }
+        }
+    }
+
+    K = std::clamp(K, 0.0f, 1.0f);
+
+    for (int i = 0; i < 4; i++) {
+        float limited_current = objs[i]->pidOutput * K;
+        
+        newTorqueCurrent[i] = std::clamp(limited_current, -objs[i]->pidMaxOutput, objs[i]->pidMaxOutput);
+    }
+
+    // LOG_INFO("PowerScale: K=%.4f, Raw=%.1f, Limit=%.1f", K, sumPower_original, maxPower);
+
+    return newTorqueCurrent;
 }
 
    [[noreturn]] void Manager::powerDaemon () {
