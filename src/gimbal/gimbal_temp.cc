@@ -1,6 +1,7 @@
 #include "gimbal/gimbal_temp.hpp"
 
 #include <algorithm>
+#include <cstddef>
 
 #include "UI.hpp"
 #include "gimbal/gimbal_config.hpp"
@@ -44,10 +45,10 @@ namespace Gimbal
             yaw_rela = &robot_set->gimbalT_2_yaw_reletive;
         }
 
-        yaw_motor.setCtrl(Pid::PidPosition(config.yaw_rate_pid_config, yaw_gyro));
-        pitch_motor.setCtrl(
-            Pid::PidPosition(config.pitch_rate_pid_config, pitch_gyro) >>
-            Pid::Invert(config.gimbal_motor_dir));
+        // yaw_motor.setCtrl(Pid::PidPosition(config.yaw_rate_pid_config, yaw_gyro));
+        // pitch_motor.setCtrl(
+        //     Pid::PidPosition(config.pitch_rate_pid_config, pitch_gyro) >>
+        //     Pid::Invert(config.gimbal_motor_dir));
 
         yaw_relative_pid = Pid::PidRad(config.yaw_relative_pid_config, yaw_relative);
         MUXDEF(
@@ -116,49 +117,115 @@ namespace Gimbal
     }
 
     void GimbalT::init_task() {
-        static int delta = 0;
-        while (imu.offline() || yaw_motor.offline() || pitch_motor.offline()) {
+       test_yaw_speed_pid();
+       // test_yaw_position_pid();
+    }
+
+    void GimbalT::test_pitch_speed_pid(){}
+    void GimbalT::test_pitch_position_pid(){}
+    void GimbalT::test_yaw_speed_pid(){
+        FILE *fp = fopen("/home/gkd/test_sentry/log/yaw_speed_data.csv", "w");
+    
+        if (fp == NULL) {
+            LOG_INFO("Error: Cannot open file! Check path.\n");
+        } 
+
+        static uint32_t tick_ms = 0; 
+        
+        float output_current = 0.0f;
+        const float BASE_CURRENT = 0.0f; 
+        float STEP_AMP = 0.0f; 
+        
+        const int CYCLE_PERIOD = 4000; 
+
+        while (1) {
+            update_data(); 
+            int phase_time = tick_ms % CYCLE_PERIOD;
+
+            if (phase_time < 1000) {
+                output_current = BASE_CURRENT;
+            } 
+            else if (phase_time < 2000) {
+                output_current = BASE_CURRENT + STEP_AMP; 
+            } 
+            else if (phase_time < 2500) {
+                output_current = BASE_CURRENT;
+            } 
+            else if (phase_time < 3500){
+                output_current = BASE_CURRENT - STEP_AMP;
+            }else {
+                output_current = BASE_CURRENT;
+            }
+
+            if (output_current > 10000.0f) output_current = 10000.0f;
+            if (output_current < -10000.0f) output_current = -10000.0f;
+
+            output_current >> yaw_motor;
+
+            if(fp != NULL) {
+                fprintf(fp, "%.4f,%.4f,%.4f\n", 
+                (float)tick_ms , 
+                output_current,           
+                imu.pitch_rate          
+                );
+                if (tick_ms % 100 == 0) fflush(fp);
+            }
+
             UserLib::sleep_ms(Config::GIMBAL_CONTROL_TIME);
-            LOG_INFO(
-                "offline %d %d %d\n", imu.offline(), yaw_motor.offline(), pitch_motor.offline());
-            delta++;
-            if (delta > 1000)
-                exit(-1);
-        }
-        while (robot_set->inited != Types::Init_status::INIT_FINISH) {
-            update_data();
-            if (config.gimbal_id == 2) {
-                robot_set->inited |= 1 << 1;
-            }
-
-            0.f >> yaw_relative_pid >> yaw_motor;
-            0.f >> pitch_absolute_pid >> pitch_motor;
-            // LOG_INFO(
-            //    "imu : %6f %6f %6f %6d\n",
-            //    imu.yaw,
-            //    imu.pitch,
-            //    imu.roll,
-            //    yaw_motor.motor_measure_.ecd);
-
-            if (fabs(yaw_relative) < Config::GIMBAL_INIT_EXP &&
-                fabs(imu.pitch) < Config::GIMBAL_INIT_EXP) {
-                init_stop_times += 1;
-            } else {
-                init_stop_times = 0;
-            }
-
-            MUXDEF(CONFIG_SENTRY, *yaw_set = robot_set->gimbal_sentry_yaw, *yaw_set = imu.yaw);
-            *pitch_set = 0;
-
-            if (init_stop_times >= Config::GIMBAL_INIT_STOP_TIME) {
-                if (config.gimbal_id == 1)
-                    robot_set->inited |= 1;
-                else
-                    robot_set->inited |= 1 << 1;
-            }
-            UserLib::sleep_ms(config.ControlTime);
+            tick_ms += Config::GIMBAL_CONTROL_TIME;
         }
     }
+    void GimbalT::test_yaw_position_pid(){
+        // remember yaw_motor.setCtrl
+        FILE *fp = fopen("/home/gkd/test_sentry/log/yaw_position_data.csv", "w");
+    
+        if (fp == NULL) {
+            LOG_INFO("Error: Cannot open file! Check path.\n");
+        } 
+
+        static uint32_t tick_ms = 0; 
+        // current here means imu_rate
+        float output_current = 0.0f;
+        const float BASE_CURRENT = 0.0f; 
+        float STEP_AMP = 0.0f; 
+        
+        const int CYCLE_PERIOD = 4000; 
+
+        while (1) {
+            update_data(); 
+            int phase_time = tick_ms % CYCLE_PERIOD;
+
+            if (phase_time < 1000) {
+                output_current = BASE_CURRENT;
+            } 
+            else if (phase_time < 2000) {
+                output_current = BASE_CURRENT + STEP_AMP; 
+            } 
+            else if (phase_time < 3000) {
+                output_current = BASE_CURRENT;
+            } 
+            else if (phase_time < 3500){
+                output_current = BASE_CURRENT - STEP_AMP;
+            }else {
+                output_current = BASE_CURRENT;
+            }
+
+            output_current >> yaw_relative_pid >> yaw_motor;
+
+            if(fp != NULL) {
+                fprintf(fp, "%.4f,%.4f,%.4f\n", 
+                (float)tick_ms , 
+                imu.pitch_rate,           
+                imu.pitch          
+                );
+                if (tick_ms % 100 == 0) fflush(fp);
+            }
+
+            UserLib::sleep_ms(Config::GIMBAL_CONTROL_TIME);
+            tick_ms += Config::GIMBAL_CONTROL_TIME;
+        }
+    }
+
 
     [[noreturn]] void GimbalT::task() {
         std::jthread shoot_thread(&Shoot::Shoot::task, &shoot);

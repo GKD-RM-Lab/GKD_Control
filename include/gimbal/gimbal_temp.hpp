@@ -18,6 +18,12 @@ namespace Gimbal
         ~GimbalT() = default;
         void init(const std::shared_ptr<Robot::Robot_set>& robot);
         void init_task();
+        
+        void test_pitch_speed_pid();
+        void test_pitch_position_pid();
+        void test_yaw_speed_pid();
+        void test_yaw_position_pid();
+
         [[noreturn]] void task();
         void update_data();
 
