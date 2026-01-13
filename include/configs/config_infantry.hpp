@@ -33,9 +33,9 @@ namespace Config
             Hardware::DJIMotorConfig{3508, "can1", 4, 0.075}
         },
         .chassis_follow_gimbal_pid_config = {
-            .kp =           2.0f,
-            .ki =           0.0f,
-            .kd =           10.0f,
+            .kp =           3.f,
+            .ki =           0.001f,
+            .kd =           15.0f,
             .max_out =      6.0f,
             .max_iout =     0.2f,
         },

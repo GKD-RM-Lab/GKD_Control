@@ -100,7 +100,7 @@ namespace Chassis
                 */
                     motors[i].give_current = wheels_pid[i].out;
                     // motors[i].give_current = cmd_power[i];
-                    //LOG_INFO("i:%d, pid:%f, cmd:%f\n", i, wheels_pid[i].out, cmd_power[i]);
+                    LOG_INFO("i:%d, pid:%f, cmd:%f\n", i, wheels_pid[i].out, cmd_power[i]);
                 }
             }
             UserLib::sleep_ms(config.ControlTime);
@@ -123,13 +123,16 @@ namespace Chassis
                         CONFIG_SENTRY,  
                         robot_set->gimbal_sentry_yaw_reletive,  
                         robot_set->gimbalT_1_yaw_reletive);  
-                    if (fabs(current_angle) > 0.05f) {  
-                        wz_set = last_wz_direction;    
-                    } else {  
+                    if (fabs(current_angle) > 0.1f && fabs(current_angle) < 0.6f) {  
+                        wz_set = last_wz_direction - 0.5;    
+                    }else if(fabs(current_angle) > 0.6f){
+                        wz_set = last_wz_direction;
+                    } 
+                    else {  
                         chassis_angle_pid.set(0.f);  
                         wz_set = chassis_angle_pid.out;  
                         last_wz_direction = 0.f;   
-                    }  
+                    }                     
                 } else {  
                     chassis_angle_pid.set(0.f);  
                     wz_set = chassis_angle_pid.out;  
