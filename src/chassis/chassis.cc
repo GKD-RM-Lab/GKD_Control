@@ -100,7 +100,7 @@ namespace Chassis
                 */
                     motors[i].give_current = wheels_pid[i].out;
                     // motors[i].give_current = cmd_power[i];
-                    LOG_INFO("i:%d, pid:%f, cmd:%f\n", i, wheels_pid[i].out, cmd_power[i]);
+                    // LOG_INFO("i:%d, pid:%f, cmd:%f\n", i, wheels_pid[i].out, cmd_power[i]);
                 }
             }
             UserLib::sleep_ms(config.ControlTime);
