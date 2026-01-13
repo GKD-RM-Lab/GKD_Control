@@ -22,13 +22,139 @@
 #include <unordered_set>
 #include <utility>
 #include "singleton.hpp"
+#include <atomic>
+#include <cstddef>
+#include <mutex>
+#include <string_view>
+#include <utility>
 
+enum log_level { Debug = 0, Info, Warn, Error };
 
-#define LOG_ERR(s, ...)                                              \
-    do {                                                             \
-        printf(ANSI_FMT(s, ANSI_FG_RED) __VA_OPT__(, ) __VA_ARGS__); \
-    } while (0)
+/**
+ * @brief 日志类
+ * 
+ */
+class Logger: public Singleton<Logger> {
+public:
+    /**
+    * @brief 设置日志等级
+    * 
+    * @param level 日志等级
+    */
+    static void set_level(log_level level);
 
+    /**
+    * @brief 获取日志等级
+    * 
+    * @return log_level 日志等级
+    */
+    static log_level level();
+
+    friend class Singleton<Logger>;
+
+    /**
+     * @brief 日志接口
+     * 
+     * @tparam Args 参数类型
+     * @param level 日志等级
+     * @param role 日志角色(描述这行日志是由哪个模块/类/函数产生的)
+     * @param fmt 日志格式，参考std::format
+     * @param args 日志参数，参考std::format
+     */
+
+    template <typename... Args>
+    void log(log_level level,
+             std::string_view role,
+             std::string fmt,
+             Args &&...args) {
+        if (static_cast<int>(level) < static_cast<int>(_level.load())) {
+            return;
+        }
+
+        std::lock_guard lock{_mutex};
+
+        size_t len = std::sprintf(print_buffer,fmt.c_str(), std::forward<Args>(args)...);
+        auto message = std::string_view{print_buffer, len};
+        log_impl(level, role, message);
+    }
+
+    /**
+     * @brief 打印debug日志
+     * 
+     * @tparam Args 
+     * @param fmt 日志格式，参考std::format
+     * @param args 日志参数，参考std::format
+     */
+
+    template <typename... Args>
+    void log_debug(std::string fmt, Args &&...args) {
+        log(log_level::Debug, "", fmt, std::forward<Args>(args)...);
+    }
+
+    /**
+     * @brief 打印info日志
+     * 
+     * @tparam Args 
+     * @param fmt 日志格式，参考std::format
+     * @param args 日志参数，参考std::format
+     */
+
+    template <typename... Args>
+    void log_info(std::string fmt, Args &&...args) {
+        log(log_level::Info, "", fmt, std::forward<Args>(args)...);
+    }
+
+    /**
+     * @brief 打印warn日志
+     * 
+     * @tparam Args 
+     * @param fmt 日志格式，参考std::format
+     * @param args 日志参数，参考std::format
+     */
+
+    template <typename... Args>
+    void log_warn(std::string fmt, Args &&...args) {
+        log(log_level::Warn, "", fmt, std::forward<Args>(args)...);
+    }
+
+    /**
+     * @brief 打印error日志
+     * 
+     * @tparam Args 
+     * @param fmt 日志格式，参考std::format
+     * @param args 日志参数，参考std::format
+     */
+
+    template <typename... Args>
+    void log_error(std::string fmt, Args &&...args) {
+        log(log_level::Error, "", fmt, std::forward<Args>(args)...);
+    }
+
+    static void set_filter(const std::string filter);
+
+private:
+    Logger() = default;
+
+    void log_impl(log_level level, std::string_view role, std::string_view message);
+    static std::string_view level_to_string(log_level level);
+
+    mutable std::mutex _mutex;
+    std::atomic<log_level> _level{log_level::Debug};
+    std::string filter_;
+    char print_buffer[1024];
+};
+
+#define logger (Logger::instance())
+
+#define LOG_LOGGER_CALL(level, role, fmt, ...)                                                   \
+    ::Logger::instance().log(level, role, fmt __VA_OPT__(, ) __VA_ARGS__)
+
+#define GET_ROLE (std::string(__FILE__) + ":" + std::to_string(__LINE__) + ":" + __FUNCTION__)
+
+#define LOG_DEBUG(fmt, ...) LOG_LOGGER_CALL(::log_level::Debug, GET_ROLE, fmt __VA_OPT__(, ) __VA_ARGS__)
+#define LOG_INFO(fmt, ...) LOG_LOGGER_CALL(::log_level::Info, GET_ROLE, fmt __VA_OPT__(, ) __VA_ARGS__)
+#define LOG_WARN(fmt, ...) LOG_LOGGER_CALL(::log_level::Warn, GET_ROLE, fmt __VA_OPT__(, ) __VA_ARGS__)
+#define LOG_ERR(fmt, ...) LOG_LOGGER_CALL(::log_level::Error, GET_ROLE, fmt __VA_OPT__(, ) __VA_ARGS__)
 
 enum class MessageType : uint8_t {
     RegisterName = 0x00,
@@ -123,7 +249,7 @@ inline uint32_t string_hash(const std::string& str) {
     return hash;
 }
 
-class Logger:public Singleton<Logger>{
+class RemoteLogger:public Singleton<RemoteLogger>{
 private:
     std::unordered_set<std::string> _registered_names;
     std::queue<std::string> _q;
@@ -231,5 +357,5 @@ public:
 
 };
 
-#define logger (Logger::instance())
+#define remote_logger (RemoteLogger::instance())
 

@@ -1,19 +1,22 @@
+
 #include "dji_motor.hpp"
 
-#include "io.hpp"
-
-#include <mutex>
 #include <chrono>
+#include <mutex>
 
-namespace Hardware {
+#include "io.hpp"
+#include "utils.hpp"
 
-    DJIMotor::DJIMotor(const DJIMotorConfig &config) {
-        auto &[type, can_name, motor_id, radius] = config;
+namespace Hardware
+{
+
+    DJIMotor::DJIMotor(const DJIMotorConfig& config) {
+        auto& [type, can_name, motor_id, radius] = config;
         motor_id_ = motor_id;
         can_info.can_name_ = can_name;
         data_.radius = radius;
-        if(type == DJIMotorType::M2006 || type == DJIMotorType::M3508) { // 构造 M3508 or M2006
-            if(type == DJIMotorType::M2006) {
+        if (type == DJIMotorType::M2006 || type == DJIMotorType::M3508) {  // 构造 M3508 or M2006
+            if (type == DJIMotorType::M2006) {
                 motor_name_ = "{M2006#" + can_name + "#" + std::to_string(motor_id) + "}";
                 data_.reduction_ratio = 1.f / 36.f;
             } else {
@@ -32,7 +35,7 @@ namespace Hardware {
                 can_info.can_id_ = DJIMotorCanID::ID_NULL;
                 motor_id_ = 0;
             }
-        } else if(type == DJIMotorType::M6020){ // 构造 M6020
+        } else if (type == DJIMotorType::M6020) {  // 构造 M6020
             motor_name_ = "{M6020#" + can_name + "#" + std::to_string(motor_id) + "}";
             can_info.callback_flag = 0x204 + motor_id;
             data_.reduction_ratio = 1.f;
@@ -50,14 +53,14 @@ namespace Hardware {
         }
     }
 
-    void DJIMotor::Message::unpack(const can_frame &frame) {
+    void DJIMotor::Message::unpack(const can_frame& frame) {
         ecd = static_cast<uint16_t>(frame.data[0] << 8 | frame.data[1]);
         speed_rpm = static_cast<int16_t>(frame.data[2] << 8 | frame.data[3]);
         given_current = static_cast<int16_t>(frame.data[4] << 8 | frame.data[5]);
         temperate = frame.data[6];
     }
 
-    void DJIMotor::unpack(const can_frame &frame) {
+    void DJIMotor::unpack(const can_frame& frame) {
         motor_measure_.unpack(frame);
         data_.rotor_angle = ECD_8192_TO_RAD * static_cast<float>(motor_measure_.ecd);
         data_.rotor_angular_velocity = RPM_TO_RAD_S * static_cast<float>(motor_measure_.speed_rpm);
@@ -73,69 +76,76 @@ namespace Hardware {
         give_current = static_cast<int16_t>(x);
     }
 
+    void DJIMotor::set_zero() {
+        give_current = static_cast<int16_t>(0);
+    }
+
     void DJIMotor::enable() {
         DJIMotorManager::register_motor(*this);
     }
 
-    namespace DJIMotorManager {
+    namespace DJIMotorManager
+    {
 
         std::unordered_map<std::string, CanBlock> motors_map;
         std::thread task_handle;
         std::mutex data_lock;
 
-        bool can_conflict(const DJIMotor &motor1, const DJIMotor &motor2) {
+        bool can_conflict(const DJIMotor& motor1, const DJIMotor& motor2) {
             return (motor1.can_info.can_id_ == motor2.can_info.can_id_ &&
                     motor1.can_info.data_bias == motor2.can_info.data_bias) ||
                    motor1.can_info.callback_flag == motor2.can_info.callback_flag;
         }
 
-        void register_motor(DJIMotor &motor) {
+        void register_motor(DJIMotor& motor) {
             std::unique_lock lock(data_lock);
             if (motor.motor_id_ == 0) {
                 return;
             }
             auto can_interface = IO::io<CAN>[motor.can_info.can_name_];
-            if(can_interface == nullptr) {
+            if (can_interface == nullptr) {
                 LOG_ERR("Motor error[%s]: can device is invalid\n", motor.motor_name_.c_str());
                 return;
             }
-            auto &[can_, motors_] = motors_map[motor.can_info.can_name_];
+            auto& [can_, motors_] = motors_map[motor.can_info.can_name_];
             can_ = can_interface;
-            for (const auto &other_motor: motors_) {
+            for (const auto& other_motor : motors_) {
                 if (can_conflict(*other_motor, motor)) {
-                    LOG_ERR("Motor error[%s, %s]: A can conflict occurred when registering motor\n",
-                            other_motor->motor_name_.c_str(), motor.motor_name_.c_str());
+                    LOG_ERR(
+                        "Motor error[%s, %s]: A can conflict occurred when registering motor\n",
+                        other_motor->motor_name_.c_str(),
+                        motor.motor_name_.c_str());
                     return;
                 }
             }
             motor.motor_enabled_ = true;
             motors_.push_back(&motor);
-            can_->register_callback_key(motor.can_info.callback_flag, [&](const can_frame &frame) {
-                motor.unpack(frame);
-            });
+            can_->register_callback_key(
+                motor.can_info.callback_flag, [&](const can_frame& frame) { motor.unpack(frame); });
         }
 
         [[noreturn]] void task() {
-            static can_frame frame[3] = {{}, {}, {}};
-            static bool valid[3] = {false, false, false};
+            static can_frame frame[3] = { {}, {}, {} };
+            static bool valid[3] = { false, false, false };
             while (true) {
                 data_lock.lock();
                 auto now = std::chrono::steady_clock::now();
-                for (auto &[can_name, can_block]: motors_map) {
+                for (auto& [can_name, can_block] : motors_map) {
                     if (can_block.can_ == nullptr) {
                         can_block.can_ = IO::io<CAN>[can_name];
                     }
                     if (can_block.can_ == nullptr) {
                         continue;
                     }
-                    frame[0] = {.can_id = 0x1ff, .len = 8};
-                    frame[1] = {.can_id = 0x200, .len = 8};
-                    frame[2] = {.can_id = 0x2ff, .len = 8};
+                    frame[0] = { .can_id = 0x1ff, .len = 8 };
+                    frame[1] = { .can_id = 0x200, .len = 8 };
+                    frame[2] = { .can_id = 0x2ff, .len = 8 };
                     valid[0] = valid[1] = valid[2] = false;
-                    for (const auto motor: can_block.motors_) {
+                    for (const auto motor : can_block.motors_) {
                         valid[static_cast<int>(motor->can_info.can_id_)] = true;
                         auto data = frame[static_cast<int>(motor->can_info.can_id_)].data;
-                        data[motor->can_info.data_bias] = static_cast<uint16_t>(motor->give_current) >> 8;
+                        data[motor->can_info.data_bias] =
+                            static_cast<uint16_t>(motor->give_current) >> 8;
                         data[motor->can_info.data_bias | 1] = motor->give_current & 0xff;
                     }
                     if (valid[0]) {
@@ -156,5 +166,5 @@ namespace Hardware {
         void start() {
             task_handle = std::thread(task);
         }
-    }
-}
+    }  // namespace DJIMotorManager
+}  // namespace Hardware

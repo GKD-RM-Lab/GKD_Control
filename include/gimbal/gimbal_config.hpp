@@ -24,5 +24,11 @@ namespace Gimbal
         uint8_t header;
         std::string auto_aim_ip;
         int auto_aim_port;
+
+        IFDEF(CONFIG_SENTRY,
+            fp32 search_pitch_speed;
+            fp32 search_pitch_amplitude;
+            fp32 search_yaw_speed;
+        );
     };
 }  // namespace Gimbal

@@ -16,6 +16,9 @@ namespace Gimbal
         [[noreturn]] void task();
         void update_data();
 
+        void test_yaw_speed_pid();
+        void test_yaw_position_pid();
+
        public:
         std::shared_ptr<Robot::Robot_set> robot_set;
         GimbalConfig config;
@@ -35,5 +38,8 @@ namespace Gimbal
         fp32* yaw_set;
 
         int init_stop_times = 0;
+        std::chrono::steady_clock::time_point search_start_time;
+        Types::ROBOT_MODE last_mode;
+        fp32 search_start_yaw;
     };
 }  // namespace Gimbal

@@ -17,6 +17,7 @@ namespace Shoot
         ~Shoot() = default;
         [[noreturn]] void task();
         bool isJam();
+        bool isFrictionOK();
 
        public:
         bool friction_finish = false;

@@ -53,8 +53,10 @@ namespace Robot
         threads.emplace_back(&Chassis::Chassis::task, &chassis);
         // threads.emplace_back(&Device::Dji_referee::task, &referee);
         // threads.emplace_back(&Device::Dji_referee::task_ui, &referee);
+        printf("--------------------%d\n",CONFIG_SENTRY);
+
         IFDEF(CONFIG_SENTRY, threads.emplace_back(&Gimbal::GimbalT::task, &gimbal_head));
-        IFDEF(__DEBUG__, threads.emplace_back(&Logger::task, &logger));
+        IFDEF(__DEBUG__, threads.emplace_back(&RemoteLogger::task, &remote_logger));
     }
 
     void Robot_ctrl::join() {

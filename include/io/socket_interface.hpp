@@ -27,7 +27,7 @@ namespace IO
         template<typename T>
         void send(const T &pkg) {
             uint8_t header = *(uint8_t *)(&pkg);
-            // LOG_INFO("header %d client: %d\n", header, clients.find(header)->second.sin_addr.s_addr);
+            //LOG_INFO("header %d client: %d\n", header, clients.find(header)->second.sin_addr.s_addr);
             auto n = sendto(
                 sockfd,
                 (const char *)(&pkg),

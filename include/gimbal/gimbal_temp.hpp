@@ -7,6 +7,7 @@
 #include "gimbal/gimbal_config.hpp"
 #include "robot.hpp"
 #include "shoot.hpp"
+#include "types.hpp"
 
 namespace Gimbal
 {
@@ -49,6 +50,10 @@ namespace Gimbal
 
         std::chrono::_V2::steady_clock::time_point receive_auto_aim;
 
+        IFDEF(CONFIG_SENTRY,
+            std::chrono::steady_clock::time_point search_start;
+            Types::ROBOT_MODE last_mode;
+        )
     };
 
 }  // namespace Gimbal

@@ -56,13 +56,8 @@ namespace Config
 //rm head
     const Gimbal::GimbalConfig gimbal_head_config = {
             .imu_serial_port = "/dev/IMU_SMALL_YAW",
-<<<<<<< Updated upstream
-            .yaw_motor_config = Hardware::DJIMotorConfig(6020, "CAN_GIMBAL", 1),
-            .pitch_motor_config = Hardware::DJIMotorConfig(6020, "CAN_GIMBAL", 2),
-=======
             .yaw_motor_config = Hardware::DJIMotorConfig(6020, "CAN_BULLET", 1),
             .pitch_motor_config = Hardware::DJIMotorConfig(6020, "CAN_BULLET", 2),
->>>>>>> Stashed changes
             .yaw_rate_pid_config = {
                 .kp =           5000.f,
                 .ki =           0.0f,
@@ -71,19 +66,11 @@ namespace Config
                 .max_iout =     5000.0f,
             },
             .pitch_rate_pid_config = {
-<<<<<<< Updated upstream
-                500.f,
-                100.f,
-                0.2f,
-                30000.0f,
-                15000.0f,
-=======
                 .kp =           4144.22f,
                 .ki =           117.94f,
                 .kd =           0.0f,
                 .max_out =      30000.0f,
                 .max_iout =     15000.0f,
->>>>>>> Stashed changes
             },
             .yaw_relative_pid_config ={
                 .kp =           25.0f,
@@ -100,19 +87,11 @@ namespace Config
                 .max_iout =     0.0f,
             },
             .pitch_absolute_pid_config = {
-<<<<<<< Updated upstream
-                .kp =           10.f,  
-                .ki =           0.0f,
-                .kd =           15.0f,  
-                .max_out =      10.0f,
-                .max_iout =     0.0f,
-=======
                 .kp =           10.86f,  
                 .ki =           0.028f,
                 .kd =           0.f,  
                 .max_out =      25.0f,
                 .max_iout =     1.0f,
->>>>>>> Stashed changes
             },
             .gimbal_motor_dir = 1.0,
             .gimbal_id = 1,
@@ -141,6 +120,10 @@ namespace Config
             .header = 0x6A,
             .auto_aim_ip = "127.0.0.1",
             .auto_aim_port = 11453,
+
+            .search_pitch_speed = 4.f,
+            .search_pitch_amplitude = 0.345f,
+            .search_yaw_speed = 1.f,
         };
     
 
@@ -148,10 +131,17 @@ const Gimbal::GimbalConfig gimbal_config = {
             .imu_serial_port = "/dev/IMU_BIG_YAW",
             .yaw_motor_config = Hardware::DJIMotorConfig(6020, "CAN_GIMBAL", 1),
             .pitch_motor_config = Hardware::DJIMotorConfig(6020, "CAN_GIMBAL", 2),
+            // .yaw_rate_pid_config = {
+            //     .kp =           450.f,
+            //     .ki =           5.0f,
+            //     .kd =           50.f,
+            //     .max_out =      850.0f,
+            //     .max_iout =     250.0f,
+            // },
             .yaw_rate_pid_config = {
-                .kp =           450.f,
-                .ki =           5.0f,
-                .kd =           50.f,
+                .kp =           765.8683407712074f,
+                .ki =           2.8508888111479456f,
+                .kd =           0.f,
                 .max_out =      850.0f,
                 .max_iout =     250.0f,
             },
@@ -169,6 +159,13 @@ const Gimbal::GimbalConfig gimbal_config = {
                 .max_out =      15.0f,
                 .max_iout =     0.0f,
             },
+            // .yaw_relative_pid_config ={
+            //     .kp =           -2.04696991595111f,
+            //     .ki =           -0.0010566243525546824f,
+            //     .kd =           0.0f,
+            //     .max_out =      15.0f,
+            //     .max_iout =     0.0f,
+            // },
             .yaw_absolute_pid_config = {
                 .kp =           8.0f,
                 .ki =           0.0f,
@@ -176,6 +173,13 @@ const Gimbal::GimbalConfig gimbal_config = {
                 .max_out =      15.0f,
                 .max_iout =     5.0f,
             },
+            // .yaw_absolute_pid_config = {
+            //     .kp =           -1.7185527333587156f,
+            //     .ki =           -0.000790158084476f,
+            //     .kd =           0.0f,
+            //     .max_out =      15.0f,
+            //     .max_iout =     5.0f,
+            // },
             .pitch_absolute_pid_config = {
                 .kp =           15.0f,
                 .ki =           0.0f,
@@ -205,7 +209,10 @@ const Gimbal::GimbalConfig gimbal_config = {
                     10000.0f,  // MAX_OUT
                     9000.0f,   // MAX_IOUT
                 }
-            }
+            },
+            .search_pitch_speed = 4.f,
+            .search_pitch_amplitude = 0.345f,
+            .search_yaw_speed = 1.f,
         };
 
     // NOTE: PID CONFIG
@@ -248,31 +255,6 @@ const Gimbal::GimbalConfig gimbal_config = {
         10.0f,  // MAX_OUT
         0.0f,   // MAX_IOUT
     };
-
-    const typename Pid::PidConfig GIMBAL_YAW_RELATIVE_PID_CONFIG{
-        8.0f, 0.0f, 0.3f, 10.0f, 0.0f,
-    };
-
-    const typename Pid::PidConfig GIMBAL_9025_YAW_RELATIVE_PID_CONFIG{
-        3.6f, 0.0f, 8.0f, 15.0f, 0.0f,
-    };
-
-    const typename Pid::PidConfig GIMBAL_PITCH_RELATIVE_PID_CONFIG{
-        12.0f, 0.0f, 0.0f, 10.0f, 0.0f,
-    };
-
-    const typename Pid::PidConfig YAW_SPEED_PID_CONFIG{
-        5000.f, 0.0f, 0.f, 20000.0f, 5000.0f,
-    };
-
-    const typename Pid::PidConfig YAW_9025_SPEED_PID_CONFIG{
-        450.f, 5.0f, 50.f, 850.0f, 250.0f,
-    };
-
-    const typename Pid::PidConfig PITCH_SPEED_PID_CONFIG{
-        5500.0f, 100.0f, 0.0f, 30000.0f, 5000.0f,
-    };
-
     /** SHOOT **/
     const typename Pid::PidConfig FRIC_SPEED_PID_CONFIG{
         5.f,       // KP
@@ -302,7 +284,7 @@ const Gimbal::GimbalConfig gimbal_config = {
     constexpr fp32 CHASSIS_MOTOR_RPM_TO_VECTOR_SEN = 0.000415809748903494517209f;
     constexpr fp32 SHOOT_MOTOR_RPM_TO_SPEED = 0.00290888208665721596153948461415f;
     constexpr fp32 M6020_ECD_TO_RAD = 2.f * M_PIf / 8192.f;
-    constexpr fp32 M9025_ECD_TO_RAD = 2.f * M_PIf / 51732.f;
+    constexpr fp32 M9025_ECD_TO_RAD = 2.f * M_PIf / 65535.f;
     constexpr fp32 RPM_TO_RAD_S = 2.f * M_PIf / 60.f;
     constexpr fp32 temp = CHASSIS_MOTOR_RPM_TO_VECTOR_SEN / (RPM_TO_RAD_S / 19.f);
     constexpr fp32 CHASSIS_CONTROL_FREQUENCE = 500.0f;
@@ -314,7 +296,7 @@ const Gimbal::GimbalConfig gimbal_config = {
     constexpr fp32 GIMBAL2_YAW_OFFSET_ECD = 3366;
     constexpr fp32 GIMBAL2_PITCH_OFFSET_ECD = 3985;
 
-    constexpr fp32 GIMBAL3_YAW_OFFSET_ECD = 51572;
+    constexpr fp32 GIMBAL3_YAW_OFFSET_ECD = 42500;
     constexpr fp32 GIMBAL3_PITCH_OFFSET_ECD = 3985;
 #else
     constexpr fp32 GIMBAL_YAW_OFFSET_ECD = 5424;

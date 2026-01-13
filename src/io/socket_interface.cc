@@ -19,7 +19,7 @@ namespace IO
             if (n > 0) {
                 uint8_t header = buffer[0];
                 if (clients.count(header) == 0) {
-                    LOG_OK("register clients %d\n", header);
+                    LOG_INFO("register clients %d\n", header);
                     clients.insert(std::pair<uint8_t, sockaddr_in>(header, cli_addr));
                 }
                 switch (header) {
@@ -55,6 +55,9 @@ namespace IO
 
         if (bind(sockfd, (sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
             LOG_ERR("can't bind socket fd with port number");
+        }
+        else{
+            LOG_INFO("bind socket %d",port_num);
         }
     }
 

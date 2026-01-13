@@ -24,7 +24,7 @@ namespace Gimbal
           yaw_set(nullptr),
           pitch_set(nullptr),
           yaw_rela(nullptr),
-          shoot(config.shoot_config) {
+          shoot(config.shoot_config){
         receive_auto_aim = std::chrono::steady_clock::now();
     }
 
@@ -47,7 +47,8 @@ namespace Gimbal
             CONFIG_SENTRY,
             yaw_absolute_pid =
                 // Pid::PidRad(config.yaw_absolute_pid_config, fake_yaw_abs) >> Pid::Invert(-1),
-                Pid::PidRad(config.yaw_absolute_pid_config, robot_set->gimbal_sentry_yaw) >> Pid::Invert(-1),
+            Pid::PidRad(config.yaw_absolute_pid_config, robot_set->gimbal_sentry_yaw) >>
+            Pid::Invert(-1),
             yaw_absolute_pid =
                 Pid::PidRad(config.yaw_absolute_pid_config, imu.yaw) >> Pid::Invert(-1));
 
@@ -69,8 +70,6 @@ namespace Gimbal
                     vc.fire,
                     config.gimbal_id);
                 receive_auto_aim = std::chrono::steady_clock::now();
-                // if (vc.fire == false)
-                //     return;
                 robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL);
                 robot_set->cv_fire = vc.fire;
                 if (vc.fire && ISDEF(CONFIG_SENTRY)) {
@@ -83,30 +82,7 @@ namespace Gimbal
                 *pitch_set = vc.pitch_set;
             });
 
-        // std::thread check_auto_aim([this] {
-        //     while (true) {
-        //         if (robot_set->sentry_follow_gimbal) {
-        //             IFDEF(
-        //                 CONFIG_SENTRY,
-        //                 robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL));
-        //             continue;
-        //         }
-        //         if (std::chrono::steady_clock::now() - receive_auto_aim >
-        //             std::chrono::milliseconds(300)) {
-        //             robot_set->shoot_open &= ~config.gimbal_id;
-        //             robot_set->cv_fire = false;
-        //         }
-        //         // LOG_INFO("shoot open %d\n", robot_set->shoot_open);
-        //         if (robot_set->shoot_open == 0) {
-        //             IFDEF(CONFIG_SENTRY, robot_set->set_mode(Types::ROBOT_MODE::ROBOT_SEARCH));
-        //         }
-        //         UserLib::sleep_ms(10);
-        //     }
-        // });
-
-        // check_auto_aim.detach();
     }
-
     void GimbalT::init_task() {
         static int delta = 0;
         while (imu.offline() || yaw_motor.offline() || pitch_motor.offline()) {
@@ -114,22 +90,23 @@ namespace Gimbal
             LOG_INFO(
                 "offline %d %d %d\n", imu.offline(), yaw_motor.offline(), pitch_motor.offline());
             delta++;
-            if (delta > 1000)
+            if (delta > 1000){
                 exit(-1);
+            }
         }
+
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
             update_data();
             0.f >> yaw_relative_pid >> yaw_motor;
-            0.165f >> pitch_absolute_pid >> pitch_motor;
+            0.f >> pitch_absolute_pid >> pitch_motor;
             // pitch_motor.set(1);
 
-            // LOG_INFO(s
+            // LOG_INFO(
             //    "imu : %6f %6f %6f %6d\n",
             //    imu.yaw,
             //    imu.pitch,
             //    imu.roll,
             //    yaw_motor.motor_measure_.ecd);
-
             if (fabs(yaw_relative) < Config::GIMBAL_INIT_EXP
                 // && fabs(imu.pitch) < Config::GIMBAL_INIT_EXP
             ) {
@@ -137,21 +114,22 @@ namespace Gimbal
             } else {
                 init_stop_times = 0;
             }
-
             MUXDEF(CONFIG_SENTRY, *yaw_set = robot_set->gimbal_sentry_yaw, *yaw_set = imu.yaw);
             *pitch_set = 0;
 
             if (init_stop_times >= Config::GIMBAL_INIT_STOP_TIME)
                 robot_set->inited |= 1;
-
             UserLib::sleep_ms(config.ControlTime);
         }
     }
 
     [[noreturn]] void GimbalT::task() {
         std::jthread shoot_thread(&Shoot::Shoot::task, &shoot);
+        last_mode = robot_set->mode;
+
         while (true) {
             update_data();
+            //LOG_INFO("mode:%d",robot_set->mode);
             // LOG_INFO("%d: yaw set %f, imu yaw %f\n", config.header, *yaw_set, imu.yaw);
             // logger.push_value("gimbal.yaw.set", (double)*yaw_set);
             // logger.push_value("gimbal.yaw.imu", (double)imu.yaw);
@@ -159,21 +137,22 @@ namespace Gimbal
                 yaw_motor.set(0);
                 pitch_motor.set(0);
             } else if (robot_set->mode == Types::ROBOT_MODE::ROBOT_SEARCH) {
-                // static float delta = 0;
-                static float delta_1 = 0;
+                IFDEF(CONFIG_SENTRY,
+                    if(last_mode != Types::ROBOT_MODE::ROBOT_SEARCH) {
+                        search_start = std::chrono::steady_clock::now();
+                    }
 
-                // float yaw = (sin(delta)) * (2 * M_PIf / 5);
-                float pitch = sin(delta_1) * 0.30 + 0.165;
-                // delta += 0.005;
-                delta_1 += 0.003;
+                    auto duration = std::chrono::duration<double>(std::chrono::steady_clock::now() - search_start);
 
-                // if (config.gimbal_id == 1) {
-                //     yaw >> yaw_relative_pid >> yaw_motor;
-                // }
-                *pitch_set = std::clamp((double)pitch, -0.18, 0.51);
-                *pitch_set >> pitch_absolute_pid >> pitch_motor;
+                    fp32 y = std::sin(duration.count() * config.search_pitch_speed);
+                    fp32 pitch = y * config.search_pitch_amplitude + 0.165f;
 
-                0 >> yaw_relative_pid >> yaw_motor;
+                    *pitch_set = std::clamp((double)pitch, -0.18, 0.51);
+
+                   // LOG_INFO("pitch_speed=%f,yaw = %f,pitch = %f,start = %d,dur = %lf",config.search_pitch_speed,yaw,pitch,search_start.time_since_epoch(),duration.count());
+
+                    *pitch_set >> pitch_absolute_pid >> pitch_motor;
+                )
             } else {
                 MUXDEF(
                     CONFIG_SENTRY,
@@ -188,16 +167,17 @@ namespace Gimbal
 
                     // ty >>
                     0 >> yaw_relative_pid >> yaw_motor;
-                    // LOG_INFO("fake:%f\n", fake_yaw_abs); 
-                    // LOG_INFO("yaw_relative:%f\n", yaw_relative); 
-                    // LOG_INFO("yaw_sentry:%f\n", robot_set->gimbal_sentry_yaw);                      
-            
+                    // LOG_INFO("fake:%f\n", fake_yaw_abs);
+                    // LOG_INFO("yaw_relative:%f\n", yaw_relative);
+                    // LOG_INFO("yaw_sentry:%f\n", robot_set->gimbal_sentry_yaw);
 
                     ,
                     *yaw_set >> yaw_absolute_pid >> yaw_motor;)
-                // *pitch_set >> pitch_absolute_pid >> pitch_motor;
-                //LOG_INFO("pitch_set:%f\n", *pitch_set);
+                *pitch_set >> pitch_absolute_pid >> pitch_motor;
+                // LOG_INFO("pitch_set:%f\n", *pitch_set);
             }
+            last_mode = robot_set->mode;
+
 
             Robot::SendAutoAimInfo pkg;
             pkg.header = config.header;
@@ -213,7 +193,7 @@ namespace Gimbal
     void GimbalT::update_data() {
         yaw_relative = UserLib::rad_format(
             yaw_motor.data_.rotor_angle - Hardware::DJIMotor::ECD_8192_TO_RAD * config.YawOffSet);
-
+        
         // LOG_INFO("%f - %f * %f = %f\n", yaw_motor.data_.rotor_angle,
         // Hardware::DJIMotor::ECD_8192_TO_RAD, config.YawOffSet, yaw_relative);
 
@@ -226,5 +206,5 @@ namespace Gimbal
         *yaw_rela = yaw_relative;
         fake_yaw_abs = robot_set->gimbal_sentry_yaw - yaw_relative;
     }
-
 }  // namespace Gimbal
+
