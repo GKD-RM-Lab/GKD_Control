@@ -9,6 +9,8 @@
 
 namespace Device
 {
+    static constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
+
     void Super_Cap::init(
         const std::string& can_name,
         const std::shared_ptr<Robot::Robot_set>& robot) {
@@ -63,10 +65,17 @@ namespace Device
         }
 
         can_frame send{};
-        const uint16_t referee_power_limit =
-            robot_set->referee_info.game_robot_status_data.chassis_power_limit;
-        const uint16_t referee_buffer_energy =
-            robot_set->referee_info.power_heat_data.chassis_power_buffer;
+        const uint64_t now_ms = static_cast<uint64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now().time_since_epoch())
+                .count());
+        const bool referee_connected =
+            robot_set->referee_last_rx_ms > 0 &&
+            now_ms >= robot_set->referee_last_rx_ms &&
+            now_ms - robot_set->referee_last_rx_ms <= REFEREE_OFFLINE_TIMEOUT_MS;
+        const uint16_t referee_buffer_energy = referee_connected
+                                                   ? robot_set->referee_info.power_heat_data.chassis_power_buffer
+                                                   : 60U;
         send.can_id = 0x061;
         send.can_dlc = 8;
         send.data[0] = enable ? 0x01 : 0x00;
@@ -79,7 +88,7 @@ namespace Device
             "[CAP_TX] en: %s set_limit=%u ref_limit=%u ref_buf=%u tx_limit=%u tx_buf=%u\n",
             enable ? "on" : "off",
             power_limit,
-            referee_power_limit,
+            robot_set->referee_info.game_robot_status_data.chassis_power_limit,
             referee_buffer_energy,
             static_cast<uint16_t>(send.data[1] | (send.data[2] << 8)),
             static_cast<uint16_t>(send.data[3] | (send.data[4] << 8)));

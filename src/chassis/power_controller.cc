@@ -268,7 +268,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
     //     measuredPower,
     //     robot_set->super_cap_info.capEnergy,
     //     robot_set->referee_info.game_robot_status_data.robot_id,
-    //     robot_set->referee_info.game_robot_status_data.robot_level);
+    // robot_set->referee_info.game_robot_status_data.robot_level);
 
     // LOG_INFO("k1 %f k2 %f k3 %f max %f\n", k1, k2, k3, maxPower);
 
