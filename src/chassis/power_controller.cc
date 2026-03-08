@@ -185,7 +185,9 @@ namespace Power
 
 
 std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
-    std::array<float, 4> newTorqueCurrent; 
+    std::array<float, 4> newTorqueCurrent{};
+    static uint8_t lastOnlineMask = 0xFFU;
+    static bool lastDegenerateRealloc = false;
 
     // 3508 近似扭矩常数(单位化后)，用于把“电流指令值”映射到“估算扭矩”
     // 0.3*(187/3591) 来自项目历史标定常数
@@ -198,11 +200,11 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
     // sumCmdPower: 四轮在“未限功率”下的总估算功率
     float sumCmdPower = 0.0f;
     // cmdPower[i]: 第 i 轮的估算功率
-    std::array<float, 4> cmdPower;
+    std::array<float, 4> cmdPower{};
 
     // sumError: 全轮速度误差和（只统计正功率轮）
     float sumError = 0.0f;
-    std::array<float, 4> error;
+    std::array<float, 4> error{};
 
     // 当前循环可用最大功率，来自用户设置与能量环上下界综合约束
     float maxPower = std::clamp(userConfiguredMaxPower, fullMaxPower, baseMaxPower);
@@ -211,12 +213,23 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
     float allocatablePower = maxPower;
     // 正功率轮的总需求（用于按权重切分）
     float sumPowerRequired = 0.0f;
+    uint8_t onlineMask = 0U;
 #if USE_DEBUG
     static float newCmdPower;
 #endif
 
     for (int i = 0; i < 4; i++) {
         PowerObj *p = objs[i];
+        const bool motorOnline = isMotorConnected(motors[i]);
+        if (motorOnline) {
+            onlineMask |= static_cast<uint8_t>(1U << i);
+        } else {
+            // 离线电机不参与功率估算与分配
+            cmdPower[i] = 0.0f;
+            error[i] = 0.0f;
+            continue;
+        }
+
         // 单轮功率模型:
         // P = τω + k1|ω| + k2τ² + k3/4
         // 第一项: 有效机械功（驱动/制动）
@@ -235,6 +248,17 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             sumError += error[i];
             sumPowerRequired += cmdPower[i];
         }
+    }
+
+    if (onlineMask != lastOnlineMask) {
+        LOG_ERR(
+            "[PWR_ALLOC] online_mask=0x%02X | m0:%s m1:%s m2:%s m3:%s\n",
+            onlineMask,
+            (onlineMask & 0x01U) ? "on" : "off",
+            (onlineMask & 0x02U) ? "on" : "off",
+            (onlineMask & 0x04U) ? "on" : "off",
+            (onlineMask & 0x08U) ? "on" : "off");
+        lastOnlineMask = onlineMask;
     }
 
     // LOG_INFO(
@@ -256,69 +280,112 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
     powerStatus.sumPowerCmd_before_clamp = sumCmdPower;
 
     // 仅在总需求超过上限时触发“限功率重分配”
+    bool degenerateRealloc = false;
     if (sumCmdPower > maxPower) {
-        float errorConfidence;
-        // 权重混合策略:
-        // - 误差大时，优先保控制误差（error 权重大）
-        // - 误差小时，按功率占比分配（prop 权重大）
-        if (sumError > error_powerDistribution_set) {
-            errorConfidence = 1.0f;
-        } else if (sumError > prop_powerDistribution_set) {
-            errorConfidence = std::clamp(
-                (sumError - prop_powerDistribution_set) /
-                    (error_powerDistribution_set - prop_powerDistribution_set),
-                0.0f,
-                1.0f);
+        if (!std::isfinite(sumPowerRequired) || sumPowerRequired <= 1e-5f) {
+            // 极端退化场景：不做权重重分配，保持在线电机原输出并限幅
+            degenerateRealloc = true;
+            for (int i = 0; i < 4; i++) {
+                if (!isMotorConnected(motors[i])) {
+                    newTorqueCurrent[i] = 0.0f;
+                    continue;
+                }
+                PowerObj *p = objs[i];
+                newTorqueCurrent[i] =
+                    std::clamp(p->pidOutput, -p->pidMaxOutput, p->pidMaxOutput);
+            }
         } else {
-            errorConfidence = 0.0f;
-        }
-        for (int i = 0; i < 4; i++) {
-            PowerObj *p = objs[i];
-
-            // 负功率轮不参与削峰，保持原输出（它本身就在降总功率）
-            if (floatEqual(cmdPower[i], 0.0f) || cmdPower[i] < 0.0f) {
-                newTorqueCurrent[i] = p->pidOutput;
-                continue;
+            float errorConfidence;
+            // 权重混合策略:
+            // - 误差大时，优先保控制误差（error 权重大）
+            // - 误差小时，按功率占比分配（prop 权重大）
+            if (sumError > error_powerDistribution_set) {
+                errorConfidence = 1.0f;
+            } else if (sumError > prop_powerDistribution_set) {
+                errorConfidence = std::clamp(
+                    (sumError - prop_powerDistribution_set) /
+                        (error_powerDistribution_set - prop_powerDistribution_set),
+                    0.0f,
+                    1.0f);
+            } else {
+                errorConfidence = 0.0f;
             }
+            for (int i = 0; i < 4; i++) {
+                PowerObj *p = objs[i];
+                if (!isMotorConnected(motors[i])) {
+                    newTorqueCurrent[i] = 0.0f;
+                    continue;
+                }
 
-            // 综合权重 = 误差权重 与 功率权重 的线性插值
-            float powerWeight_Error = fabs(p->setAv - p->curAv) / sumError;
-            float powerWeight_Prop = cmdPower[i] / sumPowerRequired;
-            float powerWeight = errorConfidence * powerWeight_Error +
-                                (1.0f - errorConfidence) * powerWeight_Prop;
+                // 负功率轮不参与削峰，保持原输出（它本身就在降总功率）
+                if (floatEqual(cmdPower[i], 0.0f) || cmdPower[i] < 0.0f) {
+                    newTorqueCurrent[i] =
+                        std::clamp(p->pidOutput, -p->pidMaxOutput, p->pidMaxOutput);
+                    continue;
+                }
 
-            // 将“目标功率 = powerWeight * allocatablePower”代回功率二次式求电流:
-            // k2*(k0*u)^2 + ω*(k0*u) + (k1|ω| + k3/4 - P_target) = 0
-            // 判别式写成 delta，后续按根求新的电流指令
-            float delta =
-                p->curAv * p->curAv - 4.0f * k2 *
-                                          (k1 * fabs(p->curAv) + k3 / static_cast<float>(4) -
-                                           powerWeight * allocatablePower);
+                // 综合权重 = 误差权重 与 功率权重 的线性插值
+                float powerWeight_Error =
+                    (sumError > 1e-5f) ? (fabs(p->setAv - p->curAv) / sumError) : 0.0f;
+                float powerWeight_Prop = cmdPower[i] / sumPowerRequired;
+                float powerWeight = errorConfidence * powerWeight_Error +
+                                    (1.0f - errorConfidence) * powerWeight_Prop;
+                powerWeight = std::clamp(powerWeight, 0.0f, 1.0f);
 
-            // delta=0: 重根
-            if (floatEqual(delta, 0.0f))
-            {
-                newTorqueCurrent[i] = -p->curAv / (2.0f * k2) / k0;
-            } else if (delta > 0.0f)
-            {
-                // 有两个实根时，按原 pidOutput 的符号选同向根，避免控制方向翻转
-                newTorqueCurrent[i] = p->pidOutput > 0.0f
-                                          ? (-p->curAv + sqrtf(delta)) / (2.0f * k2) / k0
-                                          : (-p->curAv - sqrtf(delta)) / (2.0f * k2) / k0;
-            } else
-            {
-                // 无实根时退化到抛物线顶点，保证有界
-                newTorqueCurrent[i] = -p->curAv / (2.0f * k2) / k0;
+                // 将“目标功率 = powerWeight * allocatablePower”代回功率二次式求电流:
+                // k2*(k0*u)^2 + ω*(k0*u) + (k1|ω| + k3/4 - P_target) = 0
+                // 判别式写成 delta，后续按根求新的电流指令
+                float delta =
+                    p->curAv * p->curAv - 4.0f * k2 *
+                                              (k1 * fabs(p->curAv) + k3 / static_cast<float>(4) -
+                                               powerWeight * allocatablePower);
+                if (!std::isfinite(delta)) {
+                    newTorqueCurrent[i] =
+                        std::clamp(p->pidOutput, -p->pidMaxOutput, p->pidMaxOutput);
+                    continue;
+                }
+
+                // delta=0: 重根
+                if (floatEqual(delta, 0.0f))
+                {
+                    newTorqueCurrent[i] = -p->curAv / (2.0f * k2) / k0;
+                } else if (delta > 0.0f)
+                {
+                    // 有两个实根时，按原 pidOutput 的符号选同向根，避免控制方向翻转
+                    newTorqueCurrent[i] = p->pidOutput > 0.0f
+                                              ? (-p->curAv + sqrtf(delta)) / (2.0f * k2) / k0
+                                              : (-p->curAv - sqrtf(delta)) / (2.0f * k2) / k0;
+                } else
+                {
+                    // 无实根时退化到抛物线顶点，保证有界
+                    newTorqueCurrent[i] = -p->curAv / (2.0f * k2) / k0;
+                }
+
+                // 最后再做一次电流硬限幅
+                newTorqueCurrent[i] =
+                    std::clamp(newTorqueCurrent[i], -p->pidMaxOutput, p->pidMaxOutput);
             }
-
-            // 最后再做一次电流硬限幅
-            newTorqueCurrent[i] =
-                std::clamp(newTorqueCurrent[i], -p->pidMaxOutput, p->pidMaxOutput);
         }
     } else {
         for (int i = 0; i < 4; i++) {
-            newTorqueCurrent[i] = objs[i]->pidOutput;
+            if (!isMotorConnected(motors[i])) {
+                newTorqueCurrent[i] = 0.0f;
+            } else {
+                newTorqueCurrent[i] =
+                    std::clamp(objs[i]->pidOutput, -objs[i]->pidMaxOutput, objs[i]->pidMaxOutput);
+            }
         }
+    }
+
+    if (degenerateRealloc != lastDegenerateRealloc) {
+        LOG_ERR(
+            "[PWR_ALLOC] degenerate: %s | sum_cmd=%.2f | max=%.2f | sum_req=%.5f | sum_err=%.5f\n",
+            degenerateRealloc ? "on" : "off",
+            sumCmdPower,
+            maxPower,
+            sumPowerRequired,
+            sumError);
+        lastDegenerateRealloc = degenerateRealloc;
     }
 
     // 调试用途：统计限幅后的总估算功率
