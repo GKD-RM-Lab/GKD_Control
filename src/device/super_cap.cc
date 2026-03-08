@@ -1,5 +1,6 @@
 #include "device/super_cap.hpp"
 
+#include <algorithm>
 #include <chrono>
 
 #include "macro_helpers.hpp"
@@ -22,14 +23,16 @@ namespace Device
         static int delta = 0;
         delta++;
 
-        uint16_t robot_level = robot_set->referee_info.game_robot_status_data.robot_level;
+        const uint16_t robot_level = robot_set->referee_info.game_robot_status_data.robot_level;
+        const uint16_t level_index = static_cast<uint16_t>(
+            std::clamp<int>(static_cast<int>(robot_level), 1, static_cast<int>(Power::maxLevel)) - 1);
         uint16_t power_limit = MUXDEF(
             CONFIG_HERO,
-            Power::HeroChassisPowerLimit_HP_FIRST[robot_level] * 0.9,
+            static_cast<uint16_t>(Power::HeroChassisPowerLimit_HP_FIRST[level_index] * 0.9f),
             MUXDEF(
                 CONFIG_INFANTRY,
-                Power::InfantryChassisPowerLimit_HP_FIRST[robot_level] * 0.9,
-                100U * 0.9));
+                static_cast<uint16_t>(Power::InfantryChassisPowerLimit_HP_FIRST[level_index] * 0.9f),
+                static_cast<uint16_t>(100U * 0.9f)));
 
         if (delta >= 500) {
             set(true, power_limit);
@@ -56,19 +59,26 @@ namespace Device
 
     void Super_Cap::set(bool enable, uint16_t power_limit) {
         can_frame send{};
-        uint16_t feedbackRefereePowerLimit =
+        const uint16_t referee_power_limit =
             robot_set->referee_info.game_robot_status_data.chassis_power_limit;
-        // LOG_INFO("feedbackRefereePowerLimit:%d\n", feedbackRefereePowerLimit);
-        uint16_t feedbackRefereeEnergyBuffer = 
+        const uint16_t referee_buffer_energy =
             robot_set->referee_info.power_heat_data.chassis_power_buffer;
         send.can_id = 0x061;
         send.can_dlc = 8;
-        if (enable)
-            send.data[0] = 0x01;
-        send.data[1] = feedbackRefereePowerLimit & 0xff;
-        send.data[2] = feedbackRefereePowerLimit >> 8;
-        send.data[3] = feedbackRefereeEnergyBuffer & 0xff;
-        send.data[4] = feedbackRefereeEnergyBuffer >> 8;
+        send.data[0] = enable ? 0x01 : 0x00;
+        send.data[1] = power_limit & 0xff;
+        send.data[2] = power_limit >> 8;
+        send.data[3] = referee_buffer_energy & 0xff;
+        send.data[4] = referee_buffer_energy >> 8;
+
+        LOG_INFO(
+            "[CAP_TX] en: %s set_limit=%u ref_limit=%u ref_buf=%u tx_limit=%u tx_buf=%u\n",
+            enable ? "on" : "off",
+            power_limit,
+            referee_power_limit,
+            referee_buffer_energy,
+            static_cast<uint16_t>(send.data[1] | (send.data[2] << 8)),
+            static_cast<uint16_t>(send.data[3] | (send.data[4] << 8)));
         can->send(send);
     }
 }  // namespace Device

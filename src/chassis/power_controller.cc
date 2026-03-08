@@ -24,6 +24,21 @@ namespace Power
     static constexpr uint64_t CAP_OFFLINE_TIMEOUT_MS = 300U;
     static constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
     static constexpr float RLS_UPDATE_MIN_POWER = 5.0f;
+    static constexpr uint8_t RLS_REASON_USER_DISABLED = 1U << 0;
+    static constexpr uint8_t RLS_REASON_CAP_INVALID = 1U << 1;
+    static constexpr uint8_t RLS_REASON_LOW_MEASURED_POWER = 1U << 2;
+    static constexpr uint8_t RLS_REASON_NONFINITE_SIGNAL = 1U << 3;
+
+    static constexpr std::array<Utils::Log::BitDesc, 3> kPowerErrorBitDesc = {
+        Utils::Log::BitDesc{static_cast<uint8_t>(Manager::ErrorFlags::MotorDisconnect), "motor_disc"},
+        Utils::Log::BitDesc{static_cast<uint8_t>(Manager::ErrorFlags::RefereeDisConnect), "ref_disc"},
+        Utils::Log::BitDesc{static_cast<uint8_t>(Manager::ErrorFlags::CAPDisConnect), "cap_disc"}};
+
+    static constexpr std::array<Utils::Log::BitDesc, 4> kRlsReasonBitDesc = {
+        Utils::Log::BitDesc{RLS_REASON_USER_DISABLED, "user_disabled"},
+        Utils::Log::BitDesc{RLS_REASON_CAP_INVALID, "cap_invalid"},
+        Utils::Log::BitDesc{RLS_REASON_LOW_MEASURED_POWER, "low_power"},
+        Utils::Log::BitDesc{RLS_REASON_NONFINITE_SIGNAL, "nonfinite"}};
 
     // 浮点比较辅助：避免直接比较造成阈值抖动
     static inline bool floatEqual(float a, float b) {
@@ -333,13 +348,6 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         static bool lastRlsActive = false;
         static uint8_t lastRlsReasonMask = 0xFF;
 
-        enum RlsBlockReason : uint8_t {
-            UserDisabled = 1U << 0,
-            CapInvalid = 1U << 1,
-            LowMeasuredPower = 1U << 2,
-            NonFiniteSignal = 1U << 3,
-        };
-
         isInitialized = true;
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -481,17 +489,17 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             const bool capFeedbackHealthy = isCapFeedbackHealthy(*this, capConnected);
             uint8_t rlsReasonMask = 0U;
             if (rlsEnabled != Manager::RLSEnabled::Enable) {
-                rlsReasonMask |= RlsBlockReason::UserDisabled;
+                rlsReasonMask |= RLS_REASON_USER_DISABLED;
             }
             if (!capFeedbackHealthy) {
-                rlsReasonMask |= RlsBlockReason::CapInvalid;
+                rlsReasonMask |= RLS_REASON_CAP_INVALID;
             }
             if (fabsf(measuredPower) <= RLS_UPDATE_MIN_POWER) {
-                rlsReasonMask |= RlsBlockReason::LowMeasuredPower;
+                rlsReasonMask |= RLS_REASON_LOW_MEASURED_POWER;
             }
             if (!std::isfinite(measuredPower) || !std::isfinite(samples[0][0]) ||
                 !std::isfinite(samples[1][0]) || !std::isfinite(effectivePower)) {
-                rlsReasonMask |= RlsBlockReason::NonFiniteSignal;
+                rlsReasonMask |= RLS_REASON_NONFINITE_SIGNAL;
             }
 
             const bool rlsActive = (rlsReasonMask == 0U);
@@ -503,10 +511,14 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             }
 
             if (lastRlsActive != rlsActive || lastRlsReasonMask != rlsReasonMask) {
-                LOG_INFO(
-                    "[PWR_RLS] active: %s reason=0x%02X en: %s cap_ok: %s pwr_ok: %s finite: %s k1=%.5f k2=%.5f meas=%.2f\n",
+                char rlsReasonText[96] = {};
+                Utils::Log::bitmask_to_cstr(
+                    rlsReasonMask, kRlsReasonBitDesc, rlsReasonText, sizeof(rlsReasonText));
+                LOG_ERR(
+                    "[PWR_RLS] active: %s | reason=0x%02X(%s) | en: %s | cap_ok: %s | pwr_ok: %s | finite: %s | k1=%.5f | k2=%.5f | meas=%.2f\n",
                     rlsActive ? "on" : "off",
                     rlsReasonMask,
+                    rlsReasonText,
                     (rlsEnabled == Manager::RLSEnabled::Enable) ? "on" : "off",
                     capFeedbackHealthy ? "on" : "off",
                     (fabsf(measuredPower) > RLS_UPDATE_MIN_POWER) ? "on" : "off",
@@ -523,9 +535,13 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
 
             if (lastErrorMask != error || lastCapConnected != capConnected ||
                 lastRefereeConnected != refereeConnected) {
+                char fsmErrorText[96] = {};
+                Utils::Log::bitmask_to_cstr(
+                    error, kPowerErrorBitDesc, fsmErrorText, sizeof(fsmErrorText));
                 LOG_ERR(
-                    "[PWR_FSM] err=0x%02X cap: %s ref: %s motor_all: %s refMax=%.1f upper=%.1f base=%.1f full=%.1f\n",
+                    "[PWR_FSM] err=0x%02X(%s) | cap: %s | ref: %s | motor_all: %s | refMax=%.1f | upper=%.1f | base=%.1f | full=%.1f\n",
                     error,
+                    fsmErrorText,
                     capConnected ? "on" : "off",
                     refereeConnected ? "on" : "off",
                     isAllMotorConnected(*this) ? "on" : "off",
