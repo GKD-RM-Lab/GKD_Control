@@ -177,12 +177,11 @@ namespace Power
         [[noreturn]] void powerDaemon (); //电源守护进程
     };
 
-#define POWER_PD_KP 50.0f // 能量环 P 增益（D 在配置中给出）
     const typename Pid::PidConfig powerPD_base_pid_config{
-        POWER_PD_KP, 0.0f, 0.2f, MAX_CAP_POWER_OUT, 0.0f,
+        50.f, 0.0f, 0.2f, MAX_CAP_POWER_OUT, 0.0f,
     };
     const typename Pid::PidConfig powerPD_full_pid_config{
-        POWER_PD_KP, 0.0f, 0.2f, MAX_CAP_POWER_OUT, 0.0f,
+        50.f, 0.0f, 0.2f, MAX_CAP_POWER_OUT, 0.0f,
     };
 
     /**

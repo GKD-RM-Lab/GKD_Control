@@ -491,7 +491,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                 if (capConnected) {
                     powerUpperLimit = refereeMaxPower + MAX_CAP_POWER_OUT;
                 } else {
-                    powerUpperLimit = refereeMaxPower + POWER_PD_KP *
+                    powerUpperLimit = refereeMaxPower + 50.f *
                                                             (sqrtf(refereeFullBuffSet) -
                                                              sqrtf(refereeBaseBuffSet));
                 }
