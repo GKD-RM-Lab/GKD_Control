@@ -54,10 +54,12 @@ namespace Power
     // constexpr float MIN_MAXPOWER_CONFIGURED                   = 15.0f;
     constexpr float MAX_CAP_POWER_OUT = 300.0f;                    // 超级电容可额外释放的最大功率
     constexpr float CAP_OFFLINE_ENERGY_RUNOUT_POWER_THRESHOLD = 43.0f; // 电容离线时保底功率上限阈值
-    constexpr float CAP_OFFLINE_ENERGY_TARGET_POWER = 37.0f;       // 电容离线时建议目标功率
+    constexpr float CAP_OFFLINE_ENERGY_TARGET_POWER = 60.0f;       // 电容离线时建议目标功率
     constexpr float MAX_POEWR_REFEREE_BUFF = 60.0f;                // 裁判系统缓冲上限
-    constexpr float REFEREE_GG_COE = 0.95f;                        // 裁判离线时保守系数
-    constexpr float CAP_REFEREE_BOTH_GG_COE = 0.85f;               // 裁判+电容都离线时保守系数
+    constexpr float REFEREE_GG_COE = 0.95f;                        // 裁判离线时保守系数（主参数）
+    constexpr float CAP_REFEREE_BOTH_REL_COE = 0.8947368f;         // 双离线相对 REFEREE_GG_COE 的比例
+    constexpr float CAP_REFEREE_BOTH_GG_COE =
+        REFEREE_GG_COE * CAP_REFEREE_BOTH_REL_COE;                 // 裁判+电容都离线时保守系数
 
     /**
      * @brief The Power Limit and max HP enumeration attributed by division, chassis

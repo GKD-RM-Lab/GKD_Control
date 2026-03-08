@@ -26,6 +26,7 @@ namespace Device
     class Super_Cap : Device::DeviceBase
     {
        private:
+        std::string can_name_;                        // can 名称，用于异常时重取接口
         IO::Can_interface* can;                      // 对应底盘 CAN 总线
         std::shared_ptr<Robot::Robot_set> robot_set; // 共享状态（功率/裁判信息）
 

@@ -13,7 +13,12 @@ namespace Device
         const std::string& can_name,
         const std::shared_ptr<Robot::Robot_set>& robot) {
         robot_set = robot;
+        can_name_ = can_name;
         can = IO::io<CAN>[can_name];
+        if (can == nullptr) {
+            LOG_ERR("[CAP_INIT] can lookup failed: %s\n", can_name.c_str());
+            return;
+        }
         // 0x51: 超级电容上报状态帧
         can->register_callback_key(
             0x51, std::bind(&Super_Cap::unpack, this, std::placeholders::_1));
@@ -39,25 +44,24 @@ namespace Device
             delta = 0;
         }
 
-        // 协议字段按结构体直接覆盖:
-        // errorCode, chassisPower, chassisPowerlimit, capEnergy
         std::memcpy(&robot_set->super_cap_info, frame.data, 8);
         update_time();
         robot_set->super_cap_last_rx_ms = static_cast<uint64_t>(
             std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now().time_since_epoch())
                 .count());
-
-    //     LOG_INFO(
-    //         "errorCode %d\tchassisPower %f\tchassisPowerlimit %d\tcapEnergy %d power limit %d\n",
-    //         robot_set->super_cap_info.errorCode,
-    //         robot_set->super_cap_info.chassisPower,
-    //         (int)robot_set->super_cap_info.chassisPowerlimit,
-    //         (int)robot_set->super_cap_info.capEnergy,
-    //         power_limit);
     }
 
     void Super_Cap::set(bool enable, uint16_t power_limit) {
+        if (can == nullptr) {
+            // 容错：初始化时序抖动时尝试重取一次接口
+            can = IO::io<CAN>[can_name_];
+            if (can == nullptr) {
+                LOG_ERR("[CAP_TX] can is null, skip send, can_name=%s\n", can_name_.c_str());
+                return;
+            }
+        }
+
         can_frame send{};
         const uint16_t referee_power_limit =
             robot_set->referee_info.game_robot_status_data.chassis_power_limit;

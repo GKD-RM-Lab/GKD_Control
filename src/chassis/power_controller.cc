@@ -23,7 +23,12 @@ namespace Power
     static constexpr uint16_t MOTOR_DISCONNECT_HOLD_CYCLES = 1000U;
     static constexpr uint64_t CAP_OFFLINE_TIMEOUT_MS = 300U;
     static constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
-    static constexpr float RLS_UPDATE_MIN_POWER = 5.0f;
+    static constexpr float RLS_UPDATE_POWER_ON_THRESHOLD = 6.0f;
+    static constexpr float RLS_UPDATE_POWER_OFF_THRESHOLD = 4.0f;
+    static constexpr uint16_t RLS_ENABLE_DEBOUNCE_CYCLES = 30U;
+    static constexpr uint16_t RLS_DISABLE_DEBOUNCE_CYCLES = 5U;
+    static constexpr uint16_t RLS_CAP_OK_ON_DEBOUNCE_CYCLES = 20U;
+    static constexpr uint16_t RLS_CAP_OK_OFF_DEBOUNCE_CYCLES = 5U;
     static constexpr uint8_t RLS_REASON_USER_DISABLED = 1U << 0;
     static constexpr uint8_t RLS_REASON_CAP_INVALID = 1U << 1;
     static constexpr uint8_t RLS_REASON_LOW_MEASURED_POWER = 1U << 2;
@@ -347,6 +352,12 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         static bool lastRefereeConnected = false;
         static bool lastRlsActive = false;
         static uint8_t lastRlsReasonMask = 0xFF;
+        static bool powerGoodLatched = false;
+        static bool capFeedbackHealthyLatched = false;
+        static uint16_t rlsEnableDebounce = 0U;
+        static uint16_t rlsDisableDebounce = 0U;
+        static uint16_t capOkOnDebounce = 0U;
+        static uint16_t capOkOffDebounce = 0U;
 
         isInitialized = true;
 
@@ -486,23 +497,71 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             powerStatus.error = static_cast<Manager::ErrorFlags>(error);
 
             // RLS 更新门控（可诊断原因位）
-            const bool capFeedbackHealthy = isCapFeedbackHealthy(*this, capConnected);
+            const bool capFeedbackHealthyRaw = isCapFeedbackHealthy(*this, capConnected);
+            if (capFeedbackHealthyRaw) {
+                capOkOffDebounce = 0U;
+                if (capOkOnDebounce < RLS_CAP_OK_ON_DEBOUNCE_CYCLES) {
+                    ++capOkOnDebounce;
+                }
+                if (capOkOnDebounce >= RLS_CAP_OK_ON_DEBOUNCE_CYCLES) {
+                    capFeedbackHealthyLatched = true;
+                }
+            } else {
+                capOkOnDebounce = 0U;
+                if (capOkOffDebounce < RLS_CAP_OK_OFF_DEBOUNCE_CYCLES) {
+                    ++capOkOffDebounce;
+                }
+                if (capOkOffDebounce >= RLS_CAP_OK_OFF_DEBOUNCE_CYCLES) {
+                    capFeedbackHealthyLatched = false;
+                }
+            }
+
+            const float measuredPowerAbs = fabsf(measuredPower);
+            if (powerGoodLatched) {
+                if (measuredPowerAbs < RLS_UPDATE_POWER_OFF_THRESHOLD) {
+                    powerGoodLatched = false;
+                }
+            } else if (measuredPowerAbs > RLS_UPDATE_POWER_ON_THRESHOLD) {
+                powerGoodLatched = true;
+            }
+
+            const bool finiteSignal = std::isfinite(measuredPower) &&
+                                      std::isfinite(samples[0][0]) &&
+                                      std::isfinite(samples[1][0]) &&
+                                      std::isfinite(effectivePower);
             uint8_t rlsReasonMask = 0U;
             if (rlsEnabled != Manager::RLSEnabled::Enable) {
                 rlsReasonMask |= RLS_REASON_USER_DISABLED;
             }
-            if (!capFeedbackHealthy) {
+            if (!capFeedbackHealthyLatched) {
                 rlsReasonMask |= RLS_REASON_CAP_INVALID;
             }
-            if (fabsf(measuredPower) <= RLS_UPDATE_MIN_POWER) {
+            if (!powerGoodLatched) {
                 rlsReasonMask |= RLS_REASON_LOW_MEASURED_POWER;
             }
-            if (!std::isfinite(measuredPower) || !std::isfinite(samples[0][0]) ||
-                !std::isfinite(samples[1][0]) || !std::isfinite(effectivePower)) {
+            if (!finiteSignal) {
                 rlsReasonMask |= RLS_REASON_NONFINITE_SIGNAL;
             }
 
-            const bool rlsActive = (rlsReasonMask == 0U);
+            const bool rlsRawActive = (rlsReasonMask == 0U);
+            bool rlsActive = lastRlsActive;
+            if (rlsRawActive) {
+                rlsDisableDebounce = 0U;
+                if (rlsEnableDebounce < RLS_ENABLE_DEBOUNCE_CYCLES) {
+                    ++rlsEnableDebounce;
+                }
+                if (!rlsActive && rlsEnableDebounce >= RLS_ENABLE_DEBOUNCE_CYCLES) {
+                    rlsActive = true;
+                }
+            } else {
+                rlsEnableDebounce = 0U;
+                if (rlsDisableDebounce < RLS_DISABLE_DEBOUNCE_CYCLES) {
+                    ++rlsDisableDebounce;
+                }
+                if (rlsActive && rlsDisableDebounce >= RLS_DISABLE_DEBOUNCE_CYCLES) {
+                    rlsActive = false;
+                }
+            }
 
             if (rlsActive) {
                 params = rls.update(samples, measuredPower - effectivePower - k3);
@@ -515,17 +574,18 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                 Utils::Log::bitmask_to_cstr(
                     rlsReasonMask, kRlsReasonBitDesc, rlsReasonText, sizeof(rlsReasonText));
                 LOG_ERR(
-                    "[PWR_RLS] active: %s | reason=0x%02X(%s) | en: %s | cap_ok: %s | pwr_ok: %s | finite: %s | k1=%.5f | k2=%.5f | meas=%.2f\n",
+                    "[PWR_RLS] active: %s(raw:%s) | reason=0x%02X(%s) | en: %s | cap_ok: %s(raw:%s) | pwr_ok: %s | finite: %s | db:%u/%u | k1=%.5f | k2=%.5f | meas=%.2f\n",
                     rlsActive ? "on" : "off",
+                    rlsRawActive ? "on" : "off",
                     rlsReasonMask,
                     rlsReasonText,
                     (rlsEnabled == Manager::RLSEnabled::Enable) ? "on" : "off",
-                    capFeedbackHealthy ? "on" : "off",
-                    (fabsf(measuredPower) > RLS_UPDATE_MIN_POWER) ? "on" : "off",
-                    (std::isfinite(measuredPower) && std::isfinite(samples[0][0]) &&
-                     std::isfinite(samples[1][0]) && std::isfinite(effectivePower))
-                        ? "on"
-                        : "off",
+                    capFeedbackHealthyLatched ? "on" : "off",
+                    capFeedbackHealthyRaw ? "on" : "off",
+                    powerGoodLatched ? "on" : "off",
+                    finiteSignal ? "on" : "off",
+                    rlsEnableDebounce,
+                    rlsDisableDebounce,
                     k1,
                     k2,
                     measuredPower);
