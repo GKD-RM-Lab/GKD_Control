@@ -78,11 +78,11 @@ namespace IO
 
         send_fail_count_++;
         if (send_fail_count_ >= kSendRecoverThreshold) {
-            LOG_ERR(
-                "CAN[%s] send failed %u times (errno=%d), rebuilding socket\n",
-                can_channel_.c_str(),
-                send_fail_count_,
-                errno);
+            // LOG_ERR(
+            //     "CAN[%s] send failed %u times (errno=%d), rebuilding socket\n",
+            //     can_channel_.c_str(),
+            //     send_fail_count_,
+            //     errno);
             // exit(-1);
         }
         return false;

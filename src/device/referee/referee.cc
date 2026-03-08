@@ -1,5 +1,7 @@
 #include "referee.hpp"
 
+#include <chrono>
+
 #include "utils.hpp"
 
 namespace Device
@@ -149,6 +151,10 @@ namespace Device
 
         if (parsed) {
             base_.referee_data_is_online_ = true;
+            robot_set->referee_last_rx_ms = static_cast<uint64_t>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch())
+                    .count());
         }
         return frame_len;
     }

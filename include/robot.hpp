@@ -65,6 +65,9 @@ namespace Robot
 
         Types::ReceivePacket_Super_Cap super_cap_info;
         Types::Referee_info referee_info;
+        // 最近一次接收到电容/裁判数据的单调时钟时间戳（毫秒）
+        uint64_t super_cap_last_rx_ms = 0;
+        uint64_t referee_last_rx_ms = 0;
 
         void set_mode(Types::ROBOT_MODE set_mode) {
             this->last_mode = this->mode;

@@ -11,10 +11,23 @@
 
 namespace Chassis
 {
+    namespace {
+        Power::Division selectPowerDivision() {
+            #if defined(CONFIG_SENTRY)
+                return Power::Division::SENTRY;
+            #elif defined(CONFIG_HERO)
+                return Power::Division::HERO;
+            #else
+                        
+                return Power::Division::INFANTRY;
+            #endif
+        }
+    }  // namespace
+
     Chassis::Chassis(const ChassisConfig &config)
         : config(config),
           motors(config.wheels_config.begin(), config.wheels_config.end()),
-          power_manager(motors, Power::Division::HERO) {
+          power_manager(motors, selectPowerDivision()) {
     }
 
     void Chassis::init(const std::shared_ptr<Robot::Robot_set> &robot) {
@@ -116,16 +129,8 @@ namespace Chassis
                 // }
 
                 for (int i = 0; i < 4; ++i) {
-                    if (motors[i].offline()) {
-                        LOG_ERR("chassis_%d offline\n", i + 1);
-                        // exit(-1);
-                    }
-                /*
-                TODO功率限制需要修改，现在直接输出pidout
-                */
-                    motors[i].give_current = wheels_pid[i].out;
-                    // motors[i].give_current = cmd_power[i];
-                    //LOG_INFO("i:%d, plan:%f, fact:%f\n", i, cmd_power[i], robot_set->super_cap_info.chassisPower);
+                    // motors[i].give_current = wheels_pid[i].out;
+                    motors[i].give_current = cmd_power[i];
                 }
             }
             UserLib::sleep_ms(config.ControlTime);
