@@ -56,7 +56,6 @@ namespace Device
 
     void Super_Cap::set(bool enable, uint16_t power_limit) {
         if (can == nullptr) {
-            // 容错：初始化时序抖动时尝试重取一次接口
             can = IO::io<CAN>[can_name_];
             if (can == nullptr) {
                 LOG_ERR("[CAP_TX] can is null, skip send, can_name=%s\n", can_name_.c_str());
@@ -84,14 +83,14 @@ namespace Device
         send.data[3] = referee_buffer_energy & 0xff;
         send.data[4] = referee_buffer_energy >> 8;
 
-        LOG_INFO(
-            "[CAP_TX] en: %s set_limit=%u ref_limit=%u ref_buf=%u tx_limit=%u tx_buf=%u\n",
-            enable ? "on" : "off",
-            power_limit,
-            robot_set->referee_info.game_robot_status_data.chassis_power_limit,
-            referee_buffer_energy,
-            static_cast<uint16_t>(send.data[1] | (send.data[2] << 8)),
-            static_cast<uint16_t>(send.data[3] | (send.data[4] << 8)));
+        // LOG_INFO(
+        //     "[CAP_TX] en: %s set_limit=%u ref_limit=%u ref_buf=%u tx_limit=%u tx_buf=%u\n",
+        //     enable ? "on" : "off",
+        //     power_limit,
+        //     robot_set->referee_info.game_robot_status_data.chassis_power_limit,
+        //     referee_buffer_energy,
+        //     static_cast<uint16_t>(send.data[1] | (send.data[2] << 8)),
+        //     static_cast<uint16_t>(send.data[3] | (send.data[4] << 8)));
         can->send(send);
     }
 }  // namespace Device

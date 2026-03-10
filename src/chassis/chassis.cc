@@ -11,23 +11,42 @@
 
 namespace Chassis
 {
-    namespace {
-        Power::Division selectPowerDivision() {
-            #if defined(CONFIG_SENTRY)
-                return Power::Division::SENTRY;
-            #elif defined(CONFIG_HERO)
-                return Power::Division::HERO;
-            #else
-                        
-                return Power::Division::INFANTRY;
-            #endif
-        }
-    }  // namespace
-
     Chassis::Chassis(const ChassisConfig &config)
         : config(config),
           motors(config.wheels_config.begin(), config.wheels_config.end()),
-          power_manager(motors, selectPowerDivision()) {
+          power_manager(motors, resolvePowerDivision()) {
+    }
+
+    Power::Division Chassis::resolvePowerDivision() {
+#if defined(CONFIG_SENTRY)
+        return Power::Division::SENTRY;
+#elif defined(CONFIG_HERO)
+        return Power::Division::HERO;
+#else
+        return Power::Division::INFANTRY;
+#endif
+    }
+
+    fp32 Chassis::getRelativeYaw() const {
+        return MUXDEF(
+            CONFIG_SENTRY,
+            robot_set->gimbal_sentry_yaw_reletive,
+            robot_set->gimbalT_1_yaw_reletive);
+    }
+
+    void Chassis::setAllMotorsZero() {
+        for (auto &motor : motors) {
+            motor.set_zero();
+        }
+    }
+
+    void Chassis::cleanWheelControllers(bool resetWheelSpeed) {
+        for (int i = 0; i < 4; ++i) {
+            wheels_pid[i].clean();
+            if (resetWheelSpeed) {
+                wheel_speed[i] = 0.f;
+            }
+        }
     }
 
     void Chassis::init(const std::shared_ptr<Robot::Robot_set> &robot) {
@@ -60,14 +79,8 @@ namespace Chassis
         std::jthread power_daemon(&Power::Manager::powerDaemon, &power_manager);
         while (true) { 
             if (!robot_set->referee_info.game_robot_status_data.mains_power_chassis_output) {
-                for (auto &motor : motors) {
-                    motor.set_zero();
-                }
-
-                for (int i = 0; i < 4; i++) {
-                    wheels_pid[i].clean();
-                    wheel_speed[i] = 0.f;
-                }
+                setAllMotorsZero();
+                cleanWheelControllers(true);
                 chassis_angle_pid.clean();
 
                 vx_set = 0.f;
@@ -84,12 +97,8 @@ namespace Chassis
             decomposition_speed();
             // LOG_INFO("chassis.wheel_speed: %f, %f, %f, %f\n", wheel_speed[0], wheel_speed[1], wheel_speed[2], wheel_speed[3]);
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
-                for (auto &motor : motors) {
-                    motor.set_zero();
-                }
-                for (int i = 0; i < 4; ++i) {
-                    wheels_pid[i].clean();
-                }
+                setAllMotorsZero();
+                cleanWheelControllers(false);
                 chassis_angle_pid.clean();
                 robot_set->spin_state = false;
             } else {
@@ -150,10 +159,7 @@ namespace Chassis
             if (robot_set->wz_set == 0.f) {  
                 bool recover_handled = false;
                 if (robot_set->chassis_recover_mode) {
-                    fp32 current_angle = MUXDEF(
-                        CONFIG_SENTRY,
-                        robot_set->gimbal_sentry_yaw_reletive,
-                        robot_set->gimbalT_1_yaw_reletive);
+                    const fp32 current_angle = getRelativeYaw();
 
                     if (fabs(current_angle) > 0.1f) {
                         chassis_angle_pid.set(0.f);
@@ -173,10 +179,7 @@ namespace Chassis
 
                 if (!recover_handled) {
                     if (last_wz_direction != 0.f) {  
-                        fp32 current_angle = MUXDEF(  
-                            CONFIG_SENTRY,  
-                            robot_set->gimbal_sentry_yaw_reletive,  
-                            robot_set->gimbalT_1_yaw_reletive);  
+                        const fp32 current_angle = getRelativeYaw();
                         if (fabs(current_angle) > 0.1f && fabs(current_angle) < 0.6f) {  
                             wz_set = last_wz_direction - 0.5;    
                         }else if(fabs(current_angle) > 0.6f){

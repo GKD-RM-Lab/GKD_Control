@@ -9,6 +9,7 @@
 #include "macro_helpers.hpp"
 #include "pid_controller.hpp"
 #include "power_controller.hpp"
+#include "power_controller_utils.hpp"
 #include "robot_type_config.hpp"
 #include "utils.hpp"
 
@@ -45,87 +46,6 @@ namespace Power
         Utils::Log::BitDesc{RLS_REASON_LOW_MEASURED_POWER, "low_power"},
         Utils::Log::BitDesc{RLS_REASON_NONFINITE_SIGNAL, "nonfinite"}};
 
-    // 浮点比较辅助：避免直接比较造成阈值抖动
-    static inline bool floatEqual(float a, float b) {
-        return fabs(a - b) < 1e-5f;
-    }
-
-    // 转速(rpm) -> 角速度(rad/s)
-    static inline float rpm2av(float rpm) {
-        return rpm * (float)M_PI / 30.0f;
-    }
-
-    // 角速度(rad/s) -> 转速(rpm)
-    static inline float av2rpm(float av) {
-        return av * 30.0f / (float)M_PI;
-    }
-
-    // 错误标志位操作（按位或）
-    static inline void setErrorFlag(uint8_t &curFlag, Manager::ErrorFlags setFlag) {
-        curFlag |= static_cast<uint8_t>(setFlag);
-    }
-
-    // 错误标志位清除（按位与非）
-    static inline void clearErrorFlag(uint8_t &curFlag, Manager::ErrorFlags clearFlag) {
-        curFlag &= (~static_cast<uint8_t>(clearFlag));
-    }
-
-    // 判断某错误位是否置位
-    static inline bool isFlagged(uint8_t &curFlag, Manager::ErrorFlags flag) {
-        return (curFlag & static_cast<uint8_t>(flag)) != 0;
-    }
-
-    static inline uint64_t getNowMs() {
-        return static_cast<uint64_t>(
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now().time_since_epoch())
-                .count());
-    }
-
-    static inline bool isCapConnected(const Manager &manager, uint64_t nowMs) {
-        return manager.robot_set->super_cap_last_rx_ms > 0 &&
-               nowMs >= manager.robot_set->super_cap_last_rx_ms &&
-               nowMs - manager.robot_set->super_cap_last_rx_ms <= CAP_OFFLINE_TIMEOUT_MS;
-    }
-
-    static inline bool isRefereeConnected(const Manager &manager, uint64_t nowMs) {
-        return manager.robot_set->referee_last_rx_ms > 0 &&
-               nowMs >= manager.robot_set->referee_last_rx_ms &&
-               nowMs - manager.robot_set->referee_last_rx_ms <= REFEREE_OFFLINE_TIMEOUT_MS;
-    }
-
-    static inline bool isCapFeedbackHealthy(const Manager &manager, bool capConnected) {
-        return capConnected && manager.robot_set->super_cap_info.errorCode == 0;
-    }
-
-    static inline bool isMotorConnected(const Hardware::DJIMotor &motor) {
-        return !motor.offline();
-    }
-
-    static inline bool isAllMotorConnected(const Manager &manager) {
-        for (int i = 0; i < 4; ++i) {
-            if (!isMotorConnected(manager.motors[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    static inline float getFallbackRefereeLimit(const Manager &manager) {
-        uint8_t level =
-            std::clamp<uint8_t>(LATEST_FEEDBACK_JUDGE_ROBOT_LEVEL, 1U, maxLevel);
-        switch (manager.division) {
-            case Division::HERO:
-                return HeroChassisPowerLimit_HP_FIRST[level - 1U];
-            case Division::INFANTRY:
-                return InfantryChassisPowerLimit_HP_FIRST[level - 1U];
-            case Division::SENTRY:
-                return SentryChassisPowerLimit;
-            default:
-                return InfantryChassisPowerLimit_HP_FIRST[0];
-        }
-    }
-
     Manager::Manager(
         std::deque<Hardware::DJIMotor> &motors_,
         const Division division_,
@@ -153,6 +73,7 @@ namespace Power
           k3(k3_),
           lastUpdateTick(0),
           rls(1e-5f, 0.99999f) {
+        (void)lambda_;
         // k1/k2/k3 物理上均应为非负，否则模型失真
         configASSERT(k1_ >= 0);
         configASSERT(k2_ >= 0);
@@ -220,7 +141,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
 
     for (int i = 0; i < 4; i++) {
         PowerObj *p = objs[i];
-        const bool motorOnline = isMotorConnected(motors[i]);
+        const bool motorOnline = detail::is_motor_connected(motors[i]);
         if (motorOnline) {
             onlineMask |= static_cast<uint8_t>(1U << i);
         } else {
@@ -242,7 +163,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         error[i] = fabs(p->setAv - p->curAv);
 
         // 对于负功率轮（回收/制动），其“功率需求”可视作给其他轮释放预算
-        if (floatEqual(cmdPower[i], 0.0f) || cmdPower[i] < 0.0f) {
+        if (detail::float_equal(cmdPower[i], 0.0f) || cmdPower[i] < 0.0f) {
             allocatablePower += -cmdPower[i];
         } else {
             sumError += error[i];
@@ -286,7 +207,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             // 极端退化场景：不做权重重分配，保持在线电机原输出并限幅
             degenerateRealloc = true;
             for (int i = 0; i < 4; i++) {
-                if (!isMotorConnected(motors[i])) {
+                if (!detail::is_motor_connected(motors[i])) {
                     newTorqueCurrent[i] = 0.0f;
                     continue;
                 }
@@ -312,13 +233,13 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             }
             for (int i = 0; i < 4; i++) {
                 PowerObj *p = objs[i];
-                if (!isMotorConnected(motors[i])) {
+                if (!detail::is_motor_connected(motors[i])) {
                     newTorqueCurrent[i] = 0.0f;
                     continue;
                 }
 
                 // 负功率轮不参与削峰，保持原输出（它本身就在降总功率）
-                if (floatEqual(cmdPower[i], 0.0f) || cmdPower[i] < 0.0f) {
+                if (detail::float_equal(cmdPower[i], 0.0f) || cmdPower[i] < 0.0f) {
                     newTorqueCurrent[i] =
                         std::clamp(p->pidOutput, -p->pidMaxOutput, p->pidMaxOutput);
                     continue;
@@ -346,7 +267,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                 }
 
                 // delta=0: 重根
-                if (floatEqual(delta, 0.0f))
+                if (detail::float_equal(delta, 0.0f))
                 {
                     newTorqueCurrent[i] = -p->curAv / (2.0f * k2) / k0;
                 } else if (delta > 0.0f)
@@ -368,7 +289,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         }
     } else {
         for (int i = 0; i < 4; i++) {
-            if (!isMotorConnected(motors[i])) {
+            if (!detail::is_motor_connected(motors[i])) {
                 newTorqueCurrent[i] = 0.0f;
             } else {
                 newTorqueCurrent[i] =
@@ -388,6 +309,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         lastDegenerateRealloc = degenerateRealloc;
     }
 
+#if USE_DEBUG
     // 调试用途：统计限幅后的总估算功率
     float newCmdPower = 0.0f;
     for (int i = 0; i < 4; i++) {
@@ -401,8 +323,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
     //     newCmdPower,
     //     robot_set->super_cap_info.chassisPower,
     //     robot_set->super_cap_info.capEnergy);
-
-    //      #endif
+#endif
 
     return newTorqueCurrent; 
 }
@@ -430,7 +351,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
-        lastUpdateTick = static_cast<size_t>(getNowMs());
+        lastUpdateTick = static_cast<size_t>(detail::now_ms());
 
         while (true) {
             // 默认保持高功率模式，随后由离线状态机夹紧边界
@@ -438,25 +359,27 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
 
             const float torqueConst = 0.3f * (187.0f / 3591.0f);
             const float k0 = torqueConst * 20.0f / 16384.0f;
-            const uint64_t nowMs = getNowMs();
+            const uint64_t nowMs = detail::now_ms();
 
-            const bool capConnected = isCapConnected(*this, nowMs);
-            const bool refereeConnected = isRefereeConnected(*this, nowMs);
+            const bool capConnected =
+                detail::is_cap_connected(*this, nowMs, CAP_OFFLINE_TIMEOUT_MS);
+            const bool refereeConnected =
+                detail::is_referee_connected(*this, nowMs, REFEREE_OFFLINE_TIMEOUT_MS);
 
             if (capConnected) {
-                clearErrorFlag(error, Manager::ErrorFlags::CAPDisConnect);
+                detail::clear_error_flag(error, Manager::ErrorFlags::CAPDisConnect);
             } else {
-                setErrorFlag(error, Manager::ErrorFlags::CAPDisConnect);
+                detail::set_error_flag(error, Manager::ErrorFlags::CAPDisConnect);
             }
             if (refereeConnected) {
-                clearErrorFlag(error, Manager::ErrorFlags::RefereeDisConnect);
+                detail::clear_error_flag(error, Manager::ErrorFlags::RefereeDisConnect);
             } else {
-                setErrorFlag(error, Manager::ErrorFlags::RefereeDisConnect);
+                detail::set_error_flag(error, Manager::ErrorFlags::RefereeDisConnect);
             }
-            if (isAllMotorConnected(*this)) {
-                clearErrorFlag(error, Manager::ErrorFlags::MotorDisconnect);
+            if (detail::are_all_motors_connected(*this)) {
+                detail::clear_error_flag(error, Manager::ErrorFlags::MotorDisconnect);
             } else {
-                setErrorFlag(error, Manager::ErrorFlags::MotorDisconnect);
+                detail::set_error_flag(error, Manager::ErrorFlags::MotorDisconnect);
             }
 
             // 能量反馈优先取超电，其次取裁判缓冲能量
@@ -491,13 +414,15 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                 if (capConnected) {
                     powerUpperLimit = refereeMaxPower + MAX_CAP_POWER_OUT;
                 } else {
-                    powerUpperLimit = refereeMaxPower + 50.f *
+                    powerUpperLimit = refereeMaxPower + powerPD_base_pid_config.kp *
                                                             (sqrtf(refereeFullBuffSet) -
                                                              sqrtf(refereeBaseBuffSet));
                 }
             } else {
                 refereeMaxPower =
-                    fmax(getFallbackRefereeLimit(*this), CAP_OFFLINE_ENERGY_RUNOUT_POWER_THRESHOLD);
+                    fmax(
+                        detail::fallback_referee_limit(*this, LATEST_FEEDBACK_JUDGE_ROBOT_LEVEL),
+                        CAP_OFFLINE_ENERGY_RUNOUT_POWER_THRESHOLD);
                 if (capConnected) {
                     powerUpperLimit = refereeMaxPower + MAX_CAP_POWER_OUT;
                 } else {
@@ -530,7 +455,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             samples[0][0] = 0.0f;
             samples[1][0] = 0.0f;
             for (int i = 0; i < 4; ++i) {
-                if (isMotorConnected(motors[i])) {
+                if (detail::is_motor_connected(motors[i])) {
                     motorDisconnectCounter[i] = 0U;
                 } else if (motorDisconnectCounter[i] < MOTOR_DISCONNECT_HOLD_CYCLES) {
                     motorDisconnectCounter[i]++;
@@ -539,8 +464,9 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                 // 电机刚离线的短时间内仍保留上一状态估计，防止功率突降误判
                 if (motorDisconnectCounter[i] < MOTOR_DISCONNECT_HOLD_CYCLES) {
                     effectivePower += motors[i].motor_measure_.given_current * k0 *
-                                      rpm2av(motors[i].motor_measure_.speed_rpm);
-                    samples[0][0] += fabsf(rpm2av(motors[i].motor_measure_.speed_rpm));
+                                      detail::rpm_to_angular_velocity(motors[i].motor_measure_.speed_rpm);
+                    samples[0][0] += fabsf(
+                        detail::rpm_to_angular_velocity(motors[i].motor_measure_.speed_rpm));
                     samples[1][0] += motors[i].motor_measure_.given_current * k0 *
                                      motors[i].motor_measure_.given_current * k0;
                 }
@@ -564,7 +490,8 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             powerStatus.error = static_cast<Manager::ErrorFlags>(error);
 
             // RLS 更新门控（可诊断原因位）
-            const bool capFeedbackHealthyRaw = isCapFeedbackHealthy(*this, capConnected);
+            const bool capFeedbackHealthyRaw =
+                detail::is_cap_feedback_healthy(*this, capConnected);
             if (capFeedbackHealthyRaw) {
                 capOkOffDebounce = 0U;
                 if (capOkOnDebounce < RLS_CAP_OK_ON_DEBOUNCE_CYCLES) {
@@ -671,7 +598,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                     fsmErrorText,
                     capConnected ? "on" : "off",
                     refereeConnected ? "on" : "off",
-                    isAllMotorConnected(*this) ? "on" : "off",
+                    detail::are_all_motors_connected(*this) ? "on" : "off",
                     refereeMaxPower,
                     powerUpperLimit,
                     baseMaxPower,

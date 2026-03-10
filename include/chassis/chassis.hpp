@@ -37,7 +37,13 @@ namespace Chassis
         fp32 wz_set = 0.f;
 
        private:
+        static Power::Division resolvePowerDivision();
+        fp32 getRelativeYaw() const;
+        void setAllMotorsZero();
+        void cleanWheelControllers(bool resetWheelSpeed);
+
         ChassisConfig config;
+        std::deque<Hardware::DJIMotor> motors;
         Power::Manager power_manager;
 
         // chassis vertical speed, positive means forward,unit m/s. 底盘速度 前进方向 前为正，单位
@@ -54,8 +60,6 @@ namespace Chassis
         ControllerList chassis_angle_pid;
         ControllerList wheels_pid[4];
         Power::PowerObj objs[4];
-
-        std::deque<Hardware::DJIMotor> motors;
         std::shared_ptr<Robot::Robot_set> robot_set;
     };
 }  // namespace Chassis
