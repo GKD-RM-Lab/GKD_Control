@@ -182,12 +182,12 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         lastOnlineMask = onlineMask;
     }
 
-    LOG_INFO(
-        "sum power: %f, Max power: %f, Measured: %f, CapEnergy: %d\n",
-        sumCmdPower,
-        maxPower,
-        measuredPower,
-        robot_set->super_cap_info.capEnergy);
+    // LOG_INFO(
+    //     "sum power: %f, Max power: %f, Measured: %f, CapEnergy: %d\n",
+    //     sumCmdPower,
+    //     maxPower,
+    //     measuredPower,
+    //     robot_set->super_cap_info.capEnergy);
 
     // LOG_INFO("k1 %f k2 %f k3 %f max %f\n", k1, k2, k3, maxPower);
 

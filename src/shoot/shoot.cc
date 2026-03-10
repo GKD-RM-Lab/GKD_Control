@@ -14,6 +14,59 @@
 
 namespace Shoot
 {
+    namespace {
+        constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
+
+        enum class HeatMode : uint8_t
+        {
+            Unknown = 0,
+            Burst = 1,
+            Cooling = 2
+        };
+
+        HeatMode infer_heat_mode(uint16_t heat_limit, uint16_t cooling_rate) {
+            if (heat_limit >= 200U && cooling_rate <= 16U) {
+                return HeatMode::Burst;
+            }
+            if (heat_limit <= 120U && cooling_rate >= 20U) {
+                return HeatMode::Cooling;
+            }
+            return HeatMode::Unknown;
+        }
+
+        const char* heat_mode_to_cstr(HeatMode mode) {
+            switch (mode) {
+                case HeatMode::Burst:
+                    return "burst";
+                case HeatMode::Cooling:
+                    return "cooling";
+                default:
+                    return "unknown";
+            }
+        }
+
+        int32_t heat_block_margin(HeatMode mode) {
+            switch (mode) {
+                case HeatMode::Burst:
+                    return 45;
+                case HeatMode::Cooling:
+                    return 30;
+                default:
+                    return 40;
+            }
+        }
+
+        int32_t heat_release_margin(HeatMode mode) {
+            switch (mode) {
+                case HeatMode::Burst:
+                    return 70;
+                case HeatMode::Cooling:
+                    return 50;
+                default:
+                    return 60;
+            }
+        }
+    }  // namespace
 
     Shoot::Shoot(const ShootConfig& config)
         : friction_ramp(Config::FRICTION_ADD_SPEED, Config::SHOOT_CONTROL_TIME * 1e-3f),
@@ -42,6 +95,10 @@ namespace Shoot
 
     [[noreturn]] void Shoot::task() {
         static int delta = 0;
+        static uint16_t heat_log_div = 0U;
+        static bool heat_blocked = false;
+        static bool last_shoot_heat = true;
+        static HeatMode last_heat_mode = HeatMode::Unknown;
         auto timest = std::chrono::steady_clock::now();
         bool isJamFlag = false;
         while (true) {
@@ -52,6 +109,7 @@ namespace Shoot
                 if (!friction_ramp.out) {
                     friction_ramp.out = 0;
                 }
+                robot_set->friction_real_state = false;
                 UserLib::sleep_ms(Config::SHOOT_CONTROL_TIME);
                 continue;
             }
@@ -90,7 +148,41 @@ namespace Shoot
 
             // }
             
-            bool shoot_heat = true;
+            const uint64_t now_ms = static_cast<uint64_t>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch())
+                    .count());
+            const bool referee_connected =
+                robot_set->referee_last_rx_ms > 0 &&
+                now_ms >= robot_set->referee_last_rx_ms &&
+                now_ms - robot_set->referee_last_rx_ms <= REFEREE_OFFLINE_TIMEOUT_MS;
+
+            const uint16_t heat_limit =
+                robot_set->referee_info.game_robot_status_data.shooter_cooling_limit;
+            const uint16_t cooling_rate =
+                robot_set->referee_info.game_robot_status_data.shooter_cooling_rate;
+            const uint16_t current_heat = MUXDEF(
+                CONFIG_HERO,
+                robot_set->referee_info.power_heat_data.shooter_id_1_42_mm_cooling_heat,
+                robot_set->referee_info.power_heat_data.shooter_id_1_17_mm_cooling_heat);
+            const int32_t heat_margin =
+                static_cast<int32_t>(heat_limit) - static_cast<int32_t>(current_heat);
+            const HeatMode heat_mode = infer_heat_mode(heat_limit, cooling_rate);
+            const int32_t block_margin = heat_block_margin(heat_mode);
+            const int32_t release_margin = heat_release_margin(heat_mode);
+
+            if (referee_connected && heat_limit > 0U) {
+                if (heat_blocked) {
+                    if (heat_margin >= release_margin) {
+                        heat_blocked = false;
+                    }
+                } else if (heat_margin <= block_margin) {
+                    heat_blocked = true;
+                }
+            } else {
+                heat_blocked = false;
+            }
+            const bool shoot_heat = !heat_blocked;
 
             bool remain_bullet = MUXDEF(
                 CONFIG_HERO,
@@ -104,6 +196,46 @@ namespace Shoot
                 (shoot_heat && remain_bullet) ||
                 !((robot_set->referee_info.game_status_data.game_progress & 0x0f) == 4) && 
                 (robot_set->auto_aim_status != 1 || robot_set->cv_fire == 1);
+            const bool friction_ok = isFrictionOK();
+
+            if (last_shoot_heat != shoot_heat || last_heat_mode != heat_mode) {
+                LOG_INFO(
+                    "[HEAT_CTRL] allow:%s mode:%s heat:%u/%u margin:%d blk:%d rel:%d ref:%s\n",
+                    shoot_heat ? "on" : "off",
+                    heat_mode_to_cstr(heat_mode),
+                    current_heat,
+                    heat_limit,
+                    static_cast<int>(heat_margin),
+                    static_cast<int>(block_margin),
+                    static_cast<int>(release_margin),
+                    referee_connected ? "on" : "off");
+                last_shoot_heat = shoot_heat;
+                last_heat_mode = heat_mode;
+            }
+
+            if (++heat_log_div >= 100U) {
+                heat_log_div = 0U;
+                const uint16_t remain_bullets = MUXDEF(
+                    CONFIG_HERO,
+                    robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_42_mm,
+                    robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_17_mm);
+
+                LOG_INFO(
+                    "[HEAT_MON] ref:%s mode:%s heat:%u/%u margin:%d cool:%u bullet:%u allow:%s prog:%u fric:%s fric_ok:%s shoot:%s no_force:%s\n",
+                    referee_connected ? "on" : "off",
+                    heat_mode_to_cstr(heat_mode),
+                    current_heat,
+                    heat_limit,
+                    static_cast<int>(heat_margin),
+                    cooling_rate,
+                    remain_bullets,
+                    referee_fire_allowance ? "on" : "off",
+                    static_cast<unsigned>(robot_set->referee_info.game_status_data.game_progress & 0x0FU),
+                    robot_set->friction_real_state ? "on" : "off",
+                    friction_ok ? "on" : "off",
+                    (robot_set->shoot_open & gimbal_id) ? "on" : "off",
+                    robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE ? "on" : "off");
+            }
 
             // LOG_INFO(
             //     "referee fire allowance %d %d %d %d %d\n",
@@ -127,7 +259,7 @@ namespace Shoot
 
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE ||
                 !(robot_set->shoot_open & gimbal_id) || !referee_fire_allowance ||
-                !robot_set->friction_real_state || !isFrictionOK()) {
+                !robot_set->friction_real_state || !friction_ok) {
                 trigger.set_zero();
             } else {
                 if (isJamFlag) {

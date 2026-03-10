@@ -156,7 +156,9 @@ namespace Gimbal
                 }
                 if (std::chrono::steady_clock::now() - receive_auto_aim >
                     std::chrono::milliseconds(300)) {
-                    robot_set->shoot_open &= ~config.gimbal_id;
+                    if (robot_set->auto_aim_status || robot_set->cv_fire) {
+                        robot_set->shoot_open &= ~config.gimbal_id;
+                    }
                     robot_set->cv_fire = false;
                 }
                 // LOG_INFO("shoot open %d\n", robot_set->shoot_open);
