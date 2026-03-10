@@ -47,7 +47,7 @@ namespace Power
     constexpr static float refereeFullBuffSet = 60.0f;   // 裁判系统“满功率模式”缓冲目标
     constexpr static float refereeBaseBuffSet = 50.0f;   // 裁判系统“保守模式”缓冲目标
     constexpr static float capFullBuffSet = 250.0f;      // 超级电容“满功率模式”缓冲目标
-    constexpr static float capBaseBuffSet = 100.0f;      // 超级电容“保守模式”缓冲目标
+    constexpr static float capBaseBuffSet = 50.0f;      // 超级电容“保守模式”缓冲目标
     constexpr static float error_powerDistribution_set = 20.0f; // 误差优先权重切换上阈值
     constexpr static float prop_powerDistribution_set = 15.0f;  // 比例优先权重切换下阈值
 
@@ -60,7 +60,12 @@ namespace Power
     constexpr float CAP_REFEREE_BOTH_REL_COE = 0.8947368f;         // 双离线相对 REFEREE_GG_COE 的比例
     constexpr float CAP_REFEREE_BOTH_GG_COE =
         REFEREE_GG_COE * CAP_REFEREE_BOTH_REL_COE;                 // 裁判+电容都离线时保守系数
-
+    const typename Pid::PidConfig powerPD_base_pid_config{
+        50.f, 0.0f, 0.2f, MAX_CAP_POWER_OUT, 0.0f,
+    };
+    const typename Pid::PidConfig powerPD_full_pid_config{
+        20.f, 0.0f, 0.03f, MAX_CAP_POWER_OUT, 0.0f,
+    };
     /**
      * @brief The Power Limit and max HP enumeration attributed by division, chassis
      * type and level
@@ -177,12 +182,7 @@ namespace Power
         [[noreturn]] void powerDaemon (); //电源守护进程
     };
 
-    const typename Pid::PidConfig powerPD_base_pid_config{
-        50.f, 0.0f, 0.2f, MAX_CAP_POWER_OUT, 0.0f,
-    };
-    const typename Pid::PidConfig powerPD_full_pid_config{
-        50.f, 0.0f, 0.2f, MAX_CAP_POWER_OUT, 0.0f,
-    };
+
 
     /**
      * @brief Storing the power status of the chassis

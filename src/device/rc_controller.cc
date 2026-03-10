@@ -68,7 +68,7 @@ namespace Device
         robot_set->vy_set = vy * speed;
 
         if (pkg.key) {
-            LOG_INFO("key : %d | vx: %f | vy: %f\n", pkg.key, robot_set->vx_set, robot_set->vy_set);
+            // LOG_INFO("key : %d | vx: %f | vy: %f\n", pkg.key, robot_set->vx_set, robot_set->vy_set);
         }
 
 
