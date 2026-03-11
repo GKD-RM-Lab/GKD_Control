@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include "io.hpp"
+#include "serial_interface.hpp"
 #include "utils.hpp"
 
 namespace Device
@@ -16,6 +18,48 @@ namespace Device
             return static_cast<uint16_t>(data[0]) |
                    (static_cast<uint16_t>(data[1]) << 8);
         }
+
+#ifdef CONFIG_INFANTRY
+        constexpr char kLedSerialName[] = "/dev/LED";
+
+        struct LedFrame
+        {
+            uint8_t head = 0xAA;
+            uint8_t cmd = 0x10;
+            uint8_t led_mask = 0x00;
+            uint8_t tail = 0x55;
+        } __attribute__((packed));
+
+        void sendLedFrame(const std::shared_ptr<Robot::Robot_set> &robot_set, bool fric_state) {
+            static SERIAL *led_serial = IO::io<SERIAL>[kLedSerialName];
+            static uint8_t last_led_mask = 0xFF;
+            static auto last_send_time = std::chrono::steady_clock::now();
+
+            if (led_serial == nullptr) {
+                return;
+            }
+
+            uint8_t led_mask = 0x00;
+            if (robot_set->spin_state) {
+                led_mask |= 0x01;
+            }
+            if (fric_state) {
+                led_mask |= 0x02;
+            }
+
+            auto now = std::chrono::steady_clock::now();
+            if (led_mask == last_led_mask &&
+                now - last_send_time < std::chrono::milliseconds(200)) {
+                return;
+            }
+
+            LedFrame frame{};
+            frame.led_mask = led_mask;
+            led_serial->send(*reinterpret_cast<uint8_t*>(&frame));            
+            last_led_mask = led_mask;
+            last_send_time = now;
+        }
+#endif
     }  // namespace
 
     // read data from referee
@@ -166,13 +210,18 @@ namespace Device
                 CONFIG_HERO,
                 robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_42_mm > 0,
                 robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_17_mm > 0);
+            const bool fric_state = robot_set->friction_real_state && referee_fire_allowance;
             // LOG_INFO("ui update\n");
             update_ui_data(
                 &base_,
-                robot_set->friction_real_state && referee_fire_allowance,
+                fric_state,
                 robot_set->cv_fire,
                 robot_set->spin_state,
                 ((float)robot_set->super_cap_info.capEnergy / 250) * 100);
+
+#ifdef CONFIG_INFANTRY
+            sendLedFrame(robot_set, fric_state);
+#endif
     
             
             //  LOG_INFO(

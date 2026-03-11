@@ -18,8 +18,8 @@ namespace IO
         ~Serial_interface();
         void task();
         template<typename T>
-        void send(T val) {
-           write(&val, sizeof(T));
+        void send(T &val) {
+            write(&val, sizeof(T));
         }
 
        private:
