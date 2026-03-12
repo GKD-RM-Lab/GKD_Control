@@ -8,6 +8,7 @@
 #include <cstring>
 #include <cstdio>
 #include <string>
+#include <thread>
 
 namespace IO
 {
@@ -159,12 +160,27 @@ namespace IO
         static ImuParseStats stats;
         constexpr bool kCh10xRawDump = false;
         constexpr auto kRawDumpInterval = std::chrono::milliseconds(200);
+        constexpr auto kReconnectSleep = std::chrono::milliseconds(200);
         static auto last_raw_dump = std::chrono::steady_clock::now();
+        auto last_reconnect_log = std::chrono::steady_clock::now() - std::chrono::seconds(10);
         constexpr uint8_t kCh10xLenLow = 0x4C;
         constexpr uint8_t kCh10xLenHigh = 0x00;
         constexpr size_t kCh10xFrameSize = 82;  // 2(header) + 2(len) + 2(crc) + 76(payload)
         static std::array<uint8_t, 4> ch10x_window = {};
         static size_t ch10x_window_len = 0;
+
+        auto handle_disconnect = [&](const char *tag, const std::exception &e) {
+            LOG_ERR("%s [%s]: %s\n", name.c_str(), tag, e.what());
+            try {
+                if (isOpen()) {
+                    close();
+                }
+            } catch (const std::exception &close_error) {
+                LOG_ERR("%s [close]: %s\n", name.c_str(), close_error.what());
+            }
+            std::this_thread::sleep_for(kReconnectSleep);
+        };
+
         while (true) {
             try {
                 if (isOpen()) {
@@ -285,12 +301,27 @@ namespace IO
                         stats.last_log = now;
                     }
                 } else {
-                    enumerate_ports();
-                    return;
+                    try {
+                        open();
+                        LOG_INFO("%s serial reconnected\n", name.c_str());
+                    } catch (const std::exception &e) {
+                        auto now = std::chrono::steady_clock::now();
+                        if (now - last_reconnect_log > std::chrono::seconds(2)) {
+                            LOG_ERR("%s serial offline, waiting reconnect: %s\n", name.c_str(), e.what());
+                            last_reconnect_log = now;
+                        }
+                        std::this_thread::sleep_for(kReconnectSleep);
+                    }
+                    continue;
                 }
-            } catch (serial::IOException &e) {
-                LOG_ERR("serail offline! end program now\n");
-                // exit(-1);
+            } catch (const serial::SerialException &e) {
+                handle_disconnect("serial", e);
+            } catch (const serial::IOException &e) {
+                handle_disconnect("io", e);
+            } catch (const serial::PortNotOpenedException &e) {
+                handle_disconnect("not_open", e);
+            } catch (const std::exception &e) {
+                handle_disconnect("unexpected", e);
             }
         }
     }

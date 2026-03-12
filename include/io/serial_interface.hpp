@@ -1,5 +1,6 @@
 #ifndef __SERIAL_INTERFACE__
 #define __SERIAL_INTERFACE__
+#include <exception>
 #include <functional>
 
 #include "io_callback.hpp"
@@ -18,8 +19,19 @@ namespace IO
         ~Serial_interface();
         void task();
         template<typename T>
-        void send(T val) {
-            write(reinterpret_cast<const uint8_t*>(&val), sizeof(T));
+        void send(const T &val) {
+            try {
+                write(reinterpret_cast<const uint8_t *>(&val), sizeof(T));
+            } catch (const std::exception &e) {
+                LOG_ERR("serial send failed (%s): %s\n", name.c_str(), e.what());
+                try {
+                    if (isOpen()) {
+                        close();
+                    }
+                } catch (const std::exception &close_error) {
+                    LOG_ERR("serial close failed (%s): %s\n", name.c_str(), close_error.what());
+                }
+            }
         }
 
        private:

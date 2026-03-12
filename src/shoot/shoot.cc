@@ -220,21 +220,21 @@ namespace Shoot
                     robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_42_mm,
                     robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_17_mm);
 
-                LOG_INFO(
-                    "[HEAT_MON] ref:%s mode:%s heat:%u/%u margin:%d cool:%u bullet:%u allow:%s prog:%u fric:%s fric_ok:%s shoot:%s no_force:%s\n",
-                    referee_connected ? "on" : "off",
-                    heat_mode_to_cstr(heat_mode),
-                    current_heat,
-                    heat_limit,
-                    static_cast<int>(heat_margin),
-                    cooling_rate,
-                    remain_bullets,
-                    referee_fire_allowance ? "on" : "off",
-                    static_cast<unsigned>(robot_set->referee_info.game_status_data.game_progress & 0x0FU),
-                    robot_set->friction_real_state ? "on" : "off",
-                    friction_ok ? "on" : "off",
-                    (robot_set->shoot_open & gimbal_id) ? "on" : "off",
-                    robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE ? "on" : "off");
+                // LOG_INFO(
+                //     "[HEAT_MON] ref:%s mode:%s heat:%u/%u margin:%d cool:%u bullet:%u allow:%s prog:%u fric:%s fric_ok:%s shoot:%s no_force:%s\n",
+                //     referee_connected ? "on" : "off",
+                //     heat_mode_to_cstr(heat_mode),
+                //     current_heat,
+                //     heat_limit,
+                //     static_cast<int>(heat_margin),
+                //     cooling_rate,
+                //     remain_bullets,
+                //     referee_fire_allowance ? "on" : "off",
+                //     static_cast<unsigned>(robot_set->referee_info.game_status_data.game_progress & 0x0FU),
+                //     robot_set->friction_real_state ? "on" : "off",
+                //     friction_ok ? "on" : "off",
+                //     (robot_set->shoot_open & gimbal_id) ? "on" : "off",
+                //     robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE ? "on" : "off");
             }
 
             // LOG_INFO(
