@@ -19,7 +19,7 @@ namespace IO
         void task();
         template<typename T>
         void send(T val) {
-            write(&val, sizeof(T));
+            write(reinterpret_cast<const uint8_t*>(&val), sizeof(T));
         }
 
        private:

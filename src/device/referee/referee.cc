@@ -53,9 +53,11 @@ namespace Device
                 return;
             }
 
-            LedFrame frame{};
+            LedFrame frame; 
             frame.led_mask = led_mask;
-            led_serial->send(*reinterpret_cast<uint8_t*>(&frame));            
+
+            led_serial->send(frame);            
+            
             last_led_mask = led_mask;
             last_send_time = now;
         }
@@ -220,7 +222,7 @@ namespace Device
                 ((float)robot_set->super_cap_info.capEnergy / 250) * 100);
 
 #ifdef CONFIG_INFANTRY
-            sendLedFrame(robot_set, fric_state);
+            sendLedFrame(robot_set, robot_set->friction_real_state);
 #endif
     
             

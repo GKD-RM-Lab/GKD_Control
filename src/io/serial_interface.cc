@@ -290,7 +290,7 @@ namespace IO
                 }
             } catch (serial::IOException &e) {
                 LOG_ERR("serail offline! end program now\n");
-                exit(-1);
+                // exit(-1);
             }
         }
     }
