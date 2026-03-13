@@ -1,4 +1,7 @@
 #include "device/rc_controller.hpp"
+
+#include <chrono>
+
 #include "io.hpp"
 #include "serial_interface.hpp"
 #include "types.hpp"
@@ -25,6 +28,8 @@ namespace Device
     void Rc_Controller::unpack(const Types::ReceivePacket_RC_CTRL &pkg) {
         static bool wz_key_pressed_last = false;
         static bool friction_key_pressed_last = false;
+        static bool spin_enabled = false;
+        static const auto runtime_begin = std::chrono::steady_clock::now();
 
        
         if (pkg.s1 == S1_DOWN && pkg.s2 == S2_DOWN && pkg.ch4 == ROLL_UP_MAX) {
@@ -34,7 +39,8 @@ namespace Device
         if (!robot_set->referee_info.game_robot_status_data.mains_power_chassis_output) {
             robot_set->wz_set = 0;
             robot_set->spin_state = false;
-            wz_key_pressed_last = false;            
+            wz_key_pressed_last = false;
+            spin_enabled = false;
         }
 
         if (!robot_set->referee_info.game_robot_status_data.mains_power_shooter_output) {
@@ -49,7 +55,7 @@ namespace Device
 
 #ifndef CONFIG_SENTRY 
         float vx = 0, vy = 0;
-        float speed = 1;
+        float speed = 1.2;
 
         if (pkg.key & KEY_D) {
             vx++;
@@ -76,11 +82,20 @@ namespace Device
         if (robot_set->referee_info.game_robot_status_data.mains_power_chassis_output) {
             if (pkg.key & KEY_R) {
                 if (!wz_key_pressed_last) {
-                    robot_set->wz_set = 1 - robot_set->wz_set;
+                    spin_enabled = !spin_enabled;
                 }
-            wz_key_pressed_last = true;
+                wz_key_pressed_last = true;
             } else {
                 wz_key_pressed_last = false;
+            }
+            if (spin_enabled) {
+                const auto elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(
+                                                 std::chrono::steady_clock::now() - runtime_begin)
+                                                 .count();
+                robot_set->wz_set =
+                    1.2f + static_cast<float>(elapsed_seconds % 4LL) / 10.0f;
+            } else {
+                robot_set->wz_set = 0.0f;
             }
         }
 
