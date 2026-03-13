@@ -125,6 +125,9 @@ namespace Power
                                                                               75U, 75U, 75U, 75U,
                                                                               75U, 75U, 75U };// 步兵各等级功率限制
     constexpr static uint8_t SentryChassisPowerLimit = 100U;
+    constexpr static uint8_t RefGameTypeAlliance3v3 = 4U;
+    constexpr static uint8_t RefGameTypeInfantryDuel = 5U;
+    constexpr static float InfantryDuelChassisPowerLimit = 120.0f;
 
     enum class Division
     {

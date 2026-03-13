@@ -1,5 +1,6 @@
 #include "shoot.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <iostream>
@@ -16,6 +17,8 @@ namespace Shoot
 {
     namespace {
         constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
+        constexpr uint8_t REF_GAME_TYPE_INFANTRY_DUEL = 5U;
+        constexpr float INFANTRY_DUEL_HEAT_BLOCK_RATIO = 0.75f;
 
         enum class HeatMode : uint8_t
         {
@@ -65,6 +68,10 @@ namespace Shoot
                 default:
                     return 60;
             }
+        }
+
+        bool is_infantry_duel_mode(const Robot::Robot_set& robot) {
+            return robot.referee_info.game_status_data.game_type == REF_GAME_TYPE_INFANTRY_DUEL;
         }
     }  // namespace
 
@@ -168,8 +175,17 @@ namespace Shoot
             const int32_t heat_margin =
                 static_cast<int32_t>(heat_limit) - static_cast<int32_t>(current_heat);
             const HeatMode heat_mode = infer_heat_mode(heat_limit, cooling_rate);
-            const int32_t block_margin = heat_block_margin(heat_mode);
-            const int32_t release_margin = heat_release_margin(heat_mode);
+            int32_t block_margin = heat_block_margin(heat_mode);
+            int32_t release_margin = heat_release_margin(heat_mode);
+            const bool infantry_duel_mode = is_infantry_duel_mode(*robot_set);
+            if (infantry_duel_mode && heat_limit > 0U) {
+                const int32_t duel_margin = std::max(
+                    1,
+                    static_cast<int32_t>(
+                        static_cast<float>(heat_limit) * (1.0f - INFANTRY_DUEL_HEAT_BLOCK_RATIO)));
+                block_margin = duel_margin;
+                release_margin = duel_margin;
+            }
 
             if (referee_connected && heat_limit > 0U) {
                 if (heat_blocked) {
@@ -200,8 +216,9 @@ namespace Shoot
 
             if (last_shoot_heat != shoot_heat || last_heat_mode != heat_mode) {
                 LOG_INFO(
-                    "[HEAT_CTRL] allow:%s mode:%s heat:%u/%u margin:%d blk:%d rel:%d ref:%s\n",
+                    "[HEAT_CTRL] allow:%s match:%s mode:%s heat:%u/%u margin:%d blk:%d rel:%d ref:%s\n",
                     shoot_heat ? "on" : "off",
+                    infantry_duel_mode ? "1v1" : "3v3",
                     heat_mode_to_cstr(heat_mode),
                     current_heat,
                     heat_limit,

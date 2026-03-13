@@ -10,6 +10,7 @@
 namespace Device
 {
     static constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
+    static constexpr float CAP_POWER_LIMIT_SCALE = 0.9f;
 
     void Super_Cap::init(
         const std::string& can_name,
@@ -33,13 +34,21 @@ namespace Device
         const uint16_t robot_level = robot_set->referee_info.game_robot_status_data.robot_level;
         const uint16_t level_index = static_cast<uint16_t>(
             std::clamp<int>(static_cast<int>(robot_level), 1, static_cast<int>(Power::maxLevel)) - 1);
-        uint16_t power_limit = MUXDEF(
+        const uint8_t game_type = robot_set->referee_info.game_status_data.game_type;
+        const float referee_limit =
+            static_cast<float>(robot_set->referee_info.game_robot_status_data.chassis_power_limit);
+        const float fallback_limit = MUXDEF(
             CONFIG_HERO,
-            static_cast<uint16_t>(Power::HeroChassisPowerLimit_HP_FIRST[level_index] * 0.9f),
+            static_cast<float>(Power::HeroChassisPowerLimit_HP_FIRST[level_index]),
             MUXDEF(
                 CONFIG_INFANTRY,
-                static_cast<uint16_t>(Power::InfantryChassisPowerLimit_HP_FIRST[level_index] * 0.9f),
-                static_cast<uint16_t>(100U * 0.9f)));
+                (game_type == Power::RefGameTypeInfantryDuel)
+                    ? Power::InfantryDuelChassisPowerLimit
+                    : static_cast<float>(Power::InfantryChassisPowerLimit_HP_FIRST[level_index]),
+                static_cast<float>(Power::SentryChassisPowerLimit)));
+        const float target_limit = referee_limit > 0.0f ? referee_limit : fallback_limit;
+        const uint16_t power_limit = static_cast<uint16_t>(
+            std::clamp(target_limit * CAP_POWER_LIMIT_SCALE, 1.0f, 65535.0f));
 
         if (delta >= 500) {
             set(true, power_limit);

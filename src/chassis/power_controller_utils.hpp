@@ -68,6 +68,17 @@ namespace Power::detail
         return true;
     }
 
+    inline uint8_t get_game_type(const Manager &manager) {
+        if (manager.robot_set == nullptr) {
+            return RefGameTypeAlliance3v3;
+        }
+        return manager.robot_set->referee_info.game_status_data.game_type;
+    }
+
+    inline bool is_infantry_duel_game(const Manager &manager) {
+        return get_game_type(manager) == RefGameTypeInfantryDuel;
+    }
+
     inline float fallback_referee_limit(
         const Manager &manager,
         uint8_t latestLevel) {
@@ -76,7 +87,9 @@ namespace Power::detail
             case Division::HERO:
                 return HeroChassisPowerLimit_HP_FIRST[level - 1U];
             case Division::INFANTRY:
-                return InfantryChassisPowerLimit_HP_FIRST[level - 1U];
+                return is_infantry_duel_game(manager)
+                           ? InfantryDuelChassisPowerLimit
+                           : static_cast<float>(InfantryChassisPowerLimit_HP_FIRST[level - 1U]);
             case Division::SENTRY:
                 return SentryChassisPowerLimit;
             default:
@@ -84,4 +97,3 @@ namespace Power::detail
         }
     }
 }  // namespace Power::detail
-
