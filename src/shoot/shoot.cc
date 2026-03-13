@@ -18,7 +18,7 @@ namespace Shoot
     namespace {
         constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
         constexpr uint8_t REF_GAME_TYPE_INFANTRY_DUEL = 5U;
-        constexpr float INFANTRY_DUEL_HEAT_BLOCK_RATIO = 0.75f;
+        constexpr float INFANTRY_DUEL_HEAT_BLOCK_RATIO = 0.6f;
 
         enum class HeatMode : uint8_t
         {
