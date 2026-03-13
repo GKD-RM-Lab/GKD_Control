@@ -17,34 +17,11 @@ namespace Power
 {
 
     PowerStatus powerStatus;
-    // 用户可配置功率下限（运行期会按模式/规则动态更新）
-    static float MIN_MAXPOWER_CONFIGURED = 40.0f;
-    static uint8_t LATEST_FEEDBACK_JUDGE_ROBOT_LEVEL = 1U;
-    static uint16_t motorDisconnectCounter[4] = { 0U, 0U, 0U, 0U };
-    static constexpr uint16_t MOTOR_DISCONNECT_HOLD_CYCLES = 1000U;
-    static constexpr uint64_t CAP_OFFLINE_TIMEOUT_MS = 300U;
-    static constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
-    static constexpr float RLS_UPDATE_POWER_ON_THRESHOLD = 6.0f;
-    static constexpr float RLS_UPDATE_POWER_OFF_THRESHOLD = 4.0f;
-    static constexpr uint16_t RLS_ENABLE_DEBOUNCE_CYCLES = 30U;
-    static constexpr uint16_t RLS_DISABLE_DEBOUNCE_CYCLES = 5U;
-    static constexpr uint16_t RLS_CAP_OK_ON_DEBOUNCE_CYCLES = 20U;
-    static constexpr uint16_t RLS_CAP_OK_OFF_DEBOUNCE_CYCLES = 5U;
-    static constexpr uint8_t RLS_REASON_USER_DISABLED = 1U << 0;
-    static constexpr uint8_t RLS_REASON_CAP_INVALID = 1U << 1;
-    static constexpr uint8_t RLS_REASON_LOW_MEASURED_POWER = 1U << 2;
-    static constexpr uint8_t RLS_REASON_NONFINITE_SIGNAL = 1U << 3;
 
     static constexpr std::array<Utils::Log::BitDesc, 3> kPowerErrorBitDesc = {
         Utils::Log::BitDesc{static_cast<uint8_t>(Manager::ErrorFlags::MotorDisconnect), "motor_disc"},
         Utils::Log::BitDesc{static_cast<uint8_t>(Manager::ErrorFlags::RefereeDisConnect), "ref_disc"},
         Utils::Log::BitDesc{static_cast<uint8_t>(Manager::ErrorFlags::CAPDisConnect), "cap_disc"}};
-
-    static constexpr std::array<Utils::Log::BitDesc, 4> kRlsReasonBitDesc = {
-        Utils::Log::BitDesc{RLS_REASON_USER_DISABLED, "user_disabled"},
-        Utils::Log::BitDesc{RLS_REASON_CAP_INVALID, "cap_invalid"},
-        Utils::Log::BitDesc{RLS_REASON_LOW_MEASURED_POWER, "low_power"},
-        Utils::Log::BitDesc{RLS_REASON_NONFINITE_SIGNAL, "nonfinite"}};
 
     Manager::Manager(
         std::deque<Hardware::DJIMotor> &motors_,
@@ -71,9 +48,10 @@ namespace Power
           k1(k1_),
           k2(k2_),
           k3(k3_),
+          k1Default(k1_),
+          k2Default(k2_),
           lastUpdateTick(0),
-          rls(1e-5f, 0.99999f) {
-        (void)lambda_;
+          rls(1e-5f, lambda_) {
         // k1/k2/k3 物理上均应为非负，否则模型失真
         configASSERT(k1_ >= 0);
         configASSERT(k2_ >= 0);
@@ -344,6 +322,14 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         static uint16_t rlsDisableDebounce = 0U;
         static uint16_t capOkOnDebounce = 0U;
         static uint16_t capOkOffDebounce = 0U;
+        static bool excitationGoodLatched = false;
+        static uint16_t excitationOnDebounce = 0U;
+        static uint16_t excitationOffDebounce = 0U;
+        static uint64_t lastTuneLogMs = 0U;
+        static bool tuneAvgInitialized = false;
+        static float k1CandAvg = 0.0f;
+        static float k2CandAvg = 0.0f;
+        static float k3CandAvg = 0.0f;
 
         isInitialized = true;
 
@@ -517,6 +503,38 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                 powerGoodLatched = true;
             }
 
+            const bool excitationGoodRawOn =
+                samples[0][0] > RLS_EXCITATION_SPEED_ON_THRESHOLD &&
+                samples[1][0] > RLS_EXCITATION_TAU2_ON_THRESHOLD;
+            const bool excitationGoodRawOff =
+                samples[0][0] > RLS_EXCITATION_SPEED_OFF_THRESHOLD &&
+                samples[1][0] > RLS_EXCITATION_TAU2_OFF_THRESHOLD;
+            if (excitationGoodLatched) {
+                excitationOnDebounce = 0U;
+                if (!excitationGoodRawOff) {
+                    if (excitationOffDebounce < RLS_EXCITATION_OFF_DEBOUNCE_CYCLES) {
+                        ++excitationOffDebounce;
+                    }
+                    if (excitationOffDebounce >= RLS_EXCITATION_OFF_DEBOUNCE_CYCLES) {
+                        excitationGoodLatched = false;
+                    }
+                } else {
+                    excitationOffDebounce = 0U;
+                }
+            } else {
+                excitationOffDebounce = 0U;
+                if (excitationGoodRawOn) {
+                    if (excitationOnDebounce < RLS_EXCITATION_ON_DEBOUNCE_CYCLES) {
+                        ++excitationOnDebounce;
+                    }
+                    if (excitationOnDebounce >= RLS_EXCITATION_ON_DEBOUNCE_CYCLES) {
+                        excitationGoodLatched = true;
+                    }
+                } else {
+                    excitationOnDebounce = 0U;
+                }
+            }
+
             const bool finiteSignal = std::isfinite(measuredPower) &&
                                       std::isfinite(samples[0][0]) &&
                                       std::isfinite(samples[1][0]) &&
@@ -533,6 +551,9 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             }
             if (!finiteSignal) {
                 rlsReasonMask |= RLS_REASON_NONFINITE_SIGNAL;
+            }
+            if (!excitationGoodLatched) {
+                rlsReasonMask |= RLS_REASON_LOW_EXCITATION;
             }
 
             const bool rlsRawActive = (rlsReasonMask == 0U);
@@ -554,24 +575,104 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                     rlsActive = false;
                 }
             }
-
             if (rlsActive) {
+                const float prevK1 = k1;
+                const float prevK2 = k2;
                 params = rls.update(samples, measuredPower - effectivePower - k3);
-                k1 = fmax(params[0][0], 1e-5f);
+                const float k1Raw = params[0][0];
                 const float k2Raw = params[1][0];
-                if (!std::isfinite(k2Raw) || k2Raw > 10.0f) {
-                    k2 = 1.0f;
+                const bool paramFinite = std::isfinite(k1Raw) && std::isfinite(k2Raw);
+                const bool paramInRange =
+                    k1Raw >= RLS_K1_MIN && k1Raw <= RLS_K1_MAX &&
+                    k2Raw >= RLS_K2_MIN && k2Raw <= RLS_K2_MAX;
+                if (paramFinite && paramInRange) {
+                    k1 = k1Raw;
+                    k2 = k2Raw;
                 } else {
-                    k2 = fmax(k2Raw, 1e-5f);
+                    const bool prevHealthy =
+                        std::isfinite(prevK1) && std::isfinite(prevK2) &&
+                        prevK1 > RLS_K1_MIN && prevK1 <= RLS_K1_MAX &&
+                        prevK2 > RLS_K2_MIN && prevK2 <= RLS_K2_MAX;
+                    k1 = prevHealthy ? prevK1 : std::clamp(k1Default, RLS_K1_MIN, RLS_K1_MAX);
+                    k2 = prevHealthy ? prevK2 : std::clamp(k2Default, RLS_K2_MIN, RLS_K2_MAX);
+
+                    rls.reset();
+                    float initParams[2] = { k1, k2 };
+                    rls.setParamVector(Math::Matrixf<2, 1>(initParams));
+                    // LOG_ERR(
+                    //     "[PWR_RLS] reject update | raw(k1=%.5f,k2=%.5f) | keep(k1=%.5f,k2=%.5f) | x=[%.3f,%.6f] | y=%.2f\n",
+                    //     k1Raw,
+                    //     k2Raw,
+                    //     k1,
+                    //     k2,
+                    //     samples[0][0],
+                    //     samples[1][0],
+                    //     measuredPower - effectivePower - k3);
                 }
+            }
+
+            const float measuredLoss = measuredPower - effectivePower;
+            const float modelLoss = k1 * samples[0][0] + k2 * samples[1][0] + k3;
+            const float lossResidual = measuredLoss - modelLoss;
+            float k1Cand = NAN;
+            float k2Cand = NAN;
+            const float k3Cand =
+                measuredPower - effectivePower - k1 * samples[0][0] - k2 * samples[1][0];
+            if (samples[0][0] > RLS_EXCITATION_SPEED_OFF_THRESHOLD) {
+                k1Cand =
+                    (measuredPower - effectivePower - k3 - k2 * samples[1][0]) / samples[0][0];
+            }
+            if (samples[1][0] > RLS_EXCITATION_TAU2_OFF_THRESHOLD) {
+                k2Cand =
+                    (measuredPower - effectivePower - k3 - k1 * samples[0][0]) / samples[1][0];
+            }
+
+            if (!tuneAvgInitialized) {
+                k1CandAvg = k1;
+                k2CandAvg = k2;
+                k3CandAvg = k3;
+                tuneAvgInitialized = true;
+            }
+            if (std::isfinite(k1Cand)) {
+                k1CandAvg += (k1Cand - k1CandAvg) * RLS_TUNE_AVG_ALPHA;
+            }
+            if (std::isfinite(k2Cand)) {
+                k2CandAvg += (k2Cand - k2CandAvg) * RLS_TUNE_AVG_ALPHA;
+            }
+            if (std::isfinite(k3Cand)) {
+                k3CandAvg += (k3Cand - k3CandAvg) * RLS_TUNE_AVG_ALPHA;
+            }
+
+            if (nowMs - lastTuneLogMs >= RLS_TUNE_LOG_PERIOD_MS) {
+                lastTuneLogMs = nowMs;
+                LOG_INFO(
+                    "[PWR_TUNE] src:%s rls:%s | x1=%.2f x2=%.6f | k1=%.5f inst=%.5f avg=%.5f | k2=%.5f inst=%.5f avg=%.5f | k3=%.5f inst=%.5f avg=%.5f | meas=%.2f eff=%.2f loss=%.2f model=%.2f err=%.2f\n",
+                    capConnected ? "cap" : "est",
+                    rlsActive ? "on" : "off",
+                    samples[0][0],
+                    samples[1][0],
+                    k1,
+                    k1Cand,
+                    k1CandAvg,
+                    k2,
+                    k2Cand,
+                    k2CandAvg,
+                    k3,
+                    k3Cand,
+                    k3CandAvg,
+                    measuredPower,
+                    effectivePower,
+                    measuredLoss,
+                    modelLoss,
+                    lossResidual);
             }
 
             if (lastRlsActive != rlsActive || lastRlsReasonMask != rlsReasonMask) {
                 char rlsReasonText[96] = {};
                 Utils::Log::bitmask_to_cstr(
                     rlsReasonMask, kRlsReasonBitDesc, rlsReasonText, sizeof(rlsReasonText));
-                // LOG_ERR(
-                //     "[PWR_RLS] active: %s(raw:%s) | reason=0x%02X(%s) | en: %s | cap_ok: %s(raw:%s) | pwr_ok: %s | finite: %s | db:%u/%u | k1=%.5f | k2=%.5f | meas=%.2f\n",
+                // LOG_INFO(
+                //     "[PWR_RLS] active: %s(raw:%s) | reason=0x%02X(%s) | en: %s | cap_ok: %s(raw:%s) | pwr_ok: %s | exc_ok: %s(raw:%s) | finite: %s | db:%u/%u | k1=%.5f | k2=%.5f | meas=%.2f\n",
                 //     rlsActive ? "on" : "off",
                 //     rlsRawActive ? "on" : "off",
                 //     rlsReasonMask,
@@ -580,6 +681,8 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                 //     capFeedbackHealthyLatched ? "on" : "off",
                 //     capFeedbackHealthyRaw ? "on" : "off",
                 //     powerGoodLatched ? "on" : "off",
+                //     excitationGoodLatched ? "on" : "off",
+                //     excitationGoodRawOn ? "on" : "off",
                 //     finiteSignal ? "on" : "off",
                 //     rlsEnableDebounce,
                 //     rlsDisableDebounce,

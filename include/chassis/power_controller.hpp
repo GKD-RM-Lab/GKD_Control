@@ -66,6 +66,46 @@ namespace Power
     const typename Pid::PidConfig powerPD_full_pid_config{
         20.f, 0.0f, 0.03f, MAX_CAP_POWER_OUT, 0.0f,
     };
+
+
+    static float MIN_MAXPOWER_CONFIGURED = 40.0f;
+    static uint8_t LATEST_FEEDBACK_JUDGE_ROBOT_LEVEL = 1U;
+    static uint16_t motorDisconnectCounter[4] = { 0U, 0U, 0U, 0U };
+    static constexpr uint16_t MOTOR_DISCONNECT_HOLD_CYCLES = 1000U;
+    static constexpr uint64_t CAP_OFFLINE_TIMEOUT_MS = 300U;
+    static constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
+    static constexpr float RLS_UPDATE_POWER_ON_THRESHOLD = 6.0f;
+    static constexpr float RLS_UPDATE_POWER_OFF_THRESHOLD = 4.0f;
+    static constexpr uint16_t RLS_ENABLE_DEBOUNCE_CYCLES = 30U;
+    static constexpr uint16_t RLS_DISABLE_DEBOUNCE_CYCLES = 5U;
+    static constexpr uint16_t RLS_CAP_OK_ON_DEBOUNCE_CYCLES = 20U;
+    static constexpr uint16_t RLS_CAP_OK_OFF_DEBOUNCE_CYCLES = 5U;
+    static constexpr uint16_t RLS_EXCITATION_ON_DEBOUNCE_CYCLES = 20U;
+    static constexpr uint16_t RLS_EXCITATION_OFF_DEBOUNCE_CYCLES = 5U;
+    static constexpr uint8_t RLS_REASON_USER_DISABLED = 1U << 0;
+    static constexpr uint8_t RLS_REASON_CAP_INVALID = 1U << 1;
+    static constexpr uint8_t RLS_REASON_LOW_MEASURED_POWER = 1U << 2;
+    static constexpr uint8_t RLS_REASON_NONFINITE_SIGNAL = 1U << 3;
+    static constexpr uint8_t RLS_REASON_LOW_EXCITATION = 1U << 4;
+    static constexpr float RLS_EXCITATION_SPEED_ON_THRESHOLD = 80.0f;
+    static constexpr float RLS_EXCITATION_SPEED_OFF_THRESHOLD = 50.0f;
+    static constexpr float RLS_EXCITATION_TAU2_ON_THRESHOLD = 2e-4f;
+    static constexpr float RLS_EXCITATION_TAU2_OFF_THRESHOLD = 1e-4f;
+    static constexpr float RLS_K1_MIN = 1e-5f;
+    static constexpr float RLS_K2_MIN = 1e-5f;
+    static constexpr float RLS_K1_MAX = 2.0f;
+    static constexpr float RLS_K2_MAX = 10.0f;
+    static constexpr uint64_t RLS_TUNE_LOG_PERIOD_MS = 100U;
+    static constexpr float RLS_TUNE_AVG_ALPHA = 0.05f;
+
+
+
+    static constexpr std::array<Utils::Log::BitDesc, 5> kRlsReasonBitDesc = {
+        Utils::Log::BitDesc{RLS_REASON_USER_DISABLED, "user_disabled"},
+        Utils::Log::BitDesc{RLS_REASON_CAP_INVALID, "cap_invalid"},
+        Utils::Log::BitDesc{RLS_REASON_LOW_MEASURED_POWER, "low_power"},
+        Utils::Log::BitDesc{RLS_REASON_NONFINITE_SIGNAL, "nonfinite"},
+        Utils::Log::BitDesc{RLS_REASON_LOW_EXCITATION, "low_excitation"}};
     /**
      * @brief The Power Limit and max HP enumeration attributed by division, chassis
      * type and level
@@ -129,9 +169,9 @@ namespace Power
             std::deque<Hardware::DJIMotor> &motors_,
             const Division division_,
             RLSEnabled rlsEnabled_ = Enable,
-            const float k1_ = 0.22f,
-            const float k2_ = 1.2f,
-            const float k3_ = 2.78f,
+            const float k1_ = 0.003f,
+            const float k2_ = 0.3f,
+            const float k3_ = 1.6f,
             const float lambda_ = 0.9999f);
 
         std::deque<Hardware::DJIMotor> &motors;
@@ -162,6 +202,8 @@ namespace Power
         float k1; // 速度损耗项系数
         float k2; // 电流平方损耗项系数
         float k3; // 常量损耗项
+        float k1Default;
+        float k2Default;
 
         size_t lastUpdateTick;
 
@@ -180,6 +222,7 @@ namespace Power
         void setMaxPowerConfigured(float maxPower);
         void setMode(uint8_t mode); //功率最大值设置
         [[noreturn]] void powerDaemon (); //电源守护进程
+        
     };
 
 

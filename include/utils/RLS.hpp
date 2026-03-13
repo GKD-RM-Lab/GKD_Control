@@ -57,11 +57,18 @@ namespace Power
              * @retval paramsVector
              */
             const Matrixf<dim, 1> &update(Matrixf<dim, 1> &sampleVector, float actualOutput) {
-                gainVector = (transMatrix * sampleVector) /
-                             (1.0f + (sampleVector.trans() * transMatrix * sampleVector)[0][0] / lambda) /
-                             lambda;  // Get gain vector
-                paramsVector +=
-                    gainVector * (actualOutput - (sampleVector.trans() * paramsVector)[0][0]);  // Get params vector
+                const float proj = (sampleVector.trans() * transMatrix * sampleVector)[0][0];
+                const float gainDen = lambda + proj;
+                if (!std::isfinite(gainDen) || fabsf(gainDen) < 1e-8f || !std::isfinite(actualOutput)) {
+                    return paramsVector;
+                }
+
+                gainVector = (transMatrix * sampleVector) / gainDen;  // Get gain vector
+                const float prediction = (sampleVector.trans() * paramsVector)[0][0];
+                if (!std::isfinite(prediction)) {
+                    return paramsVector;
+                }
+                paramsVector += gainVector * (actualOutput - prediction);  // Get params vector
                 transMatrix =
                     (transMatrix - gainVector * sampleVector.trans() * transMatrix) / lambda;  // Get transferred matrix
 
@@ -104,7 +111,7 @@ namespace Power
              * @retval None
              */
             void validate() const {
-                configASSERT(lambda >= 0.0f || lambda <= 1.0f);
+                configASSERT(lambda > 0.0f && lambda <= 1.0f);
                 configASSERT(delta > 0);
             }
 
