@@ -558,29 +558,34 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             if (rlsActive) {
                 params = rls.update(samples, measuredPower - effectivePower - k3);
                 k1 = fmax(params[0][0], 1e-5f);
-                k2 = fmax(params[1][0], 1e-5f);
+                const float k2Raw = params[1][0];
+                if (!std::isfinite(k2Raw) || k2Raw > 10.0f) {
+                    k2 = 1.0f;
+                } else {
+                    k2 = fmax(k2Raw, 1e-5f);
+                }
             }
 
             if (lastRlsActive != rlsActive || lastRlsReasonMask != rlsReasonMask) {
                 char rlsReasonText[96] = {};
                 Utils::Log::bitmask_to_cstr(
                     rlsReasonMask, kRlsReasonBitDesc, rlsReasonText, sizeof(rlsReasonText));
-                LOG_ERR(
-                    "[PWR_RLS] active: %s(raw:%s) | reason=0x%02X(%s) | en: %s | cap_ok: %s(raw:%s) | pwr_ok: %s | finite: %s | db:%u/%u | k1=%.5f | k2=%.5f | meas=%.2f\n",
-                    rlsActive ? "on" : "off",
-                    rlsRawActive ? "on" : "off",
-                    rlsReasonMask,
-                    rlsReasonText,
-                    (rlsEnabled == Manager::RLSEnabled::Enable) ? "on" : "off",
-                    capFeedbackHealthyLatched ? "on" : "off",
-                    capFeedbackHealthyRaw ? "on" : "off",
-                    powerGoodLatched ? "on" : "off",
-                    finiteSignal ? "on" : "off",
-                    rlsEnableDebounce,
-                    rlsDisableDebounce,
-                    k1,
-                    k2,
-                    measuredPower);
+                // LOG_ERR(
+                //     "[PWR_RLS] active: %s(raw:%s) | reason=0x%02X(%s) | en: %s | cap_ok: %s(raw:%s) | pwr_ok: %s | finite: %s | db:%u/%u | k1=%.5f | k2=%.5f | meas=%.2f\n",
+                //     rlsActive ? "on" : "off",
+                //     rlsRawActive ? "on" : "off",
+                //     rlsReasonMask,
+                //     rlsReasonText,
+                //     (rlsEnabled == Manager::RLSEnabled::Enable) ? "on" : "off",
+                //     capFeedbackHealthyLatched ? "on" : "off",
+                //     capFeedbackHealthyRaw ? "on" : "off",
+                //     powerGoodLatched ? "on" : "off",
+                //     finiteSignal ? "on" : "off",
+                //     rlsEnableDebounce,
+                //     rlsDisableDebounce,
+                //     k1,
+                //     k2,
+                //     measuredPower);
                 lastRlsActive = rlsActive;
                 lastRlsReasonMask = rlsReasonMask;
             }
