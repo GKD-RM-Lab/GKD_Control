@@ -281,9 +281,9 @@ namespace Gimbal
             MUXDEF(CONFIG_SENTRY, pkg.yaw = fake_yaw_abs, pkg.yaw = imu_yaw.yaw);
             pkg.pitch = imu_pitch.pitch;
             pkg.roll = imu_pitch.roll;
-            pkg.red = robot_set->referee_info.game_robot_status_data.robot_id < 100;
-            // LOG_INFO("%s\n", (pkg.red == 1) ? "red" : "blue" );
-            LOG_INFO("pkg.roll:%f\n", pkg.roll);
+            // pkg.red = robot_set->referee_info.game_robot_status_data.robot_id < 100;
+            // LOG_INF("%s\n", (pkg.red == 1) ? "red" : "blue" );
+            // LOG_INFO("pkg.roll:%f\n", pkg.roll);
             IO::io<SOCKET>["AUTO_AIM_CONTROL"]->send(pkg);
 
 

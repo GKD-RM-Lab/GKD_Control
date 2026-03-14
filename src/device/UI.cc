@@ -8,7 +8,9 @@ RM自定义UI协议       基于RM2020学生串口通信协议V1.1
 
 #include "UI.hpp"
 
+#include <climits>
 #include <cstdarg>
+#include <cstdio>
 #include <string>
 
 static unsigned char UI_com[512];
@@ -562,7 +564,7 @@ void UI_open(Device::Base *base_, UI_control_t *UI) {
         "frs",
         UI_Graph_ADD,
         9,
-        UI_Color_White,
+        UI_Color_Cyan,
         10,
         6,
         3,
@@ -570,11 +572,11 @@ void UI_open(Device::Base *base_, UI_control_t *UI) {
         FRIC_NAME_START_Y,
         "FRIC");
     String_Draw(
-        &UI->fric_name,
+        &UI->spin_name,
         "sps",
         UI_Graph_ADD,
         9,
-        UI_Color_White,
+        UI_Color_Cyan,
         10,
         6,
         3,
@@ -684,33 +686,66 @@ void UI_task(Device::Base *base_) {
 /*custom_ui*/
 
 Crosshair_Data_Type Crosshair_Data;
-UI_DisplayData_Type UI_Data;
+volatile UI_DisplayData_Type UI_Data;
 State_Indicate_Type State_Data;
 
 String_Data state_text_data;
-Graph_Data shoot_distance_bar, cap_percentage, auto_aim_range;
-Graph_Data still_cross_line[7];
-char cap_text[30], auto_aim_text[10];
+String_Data fired_text_data;
+Graph_Data shoot_distance_bar, cap_percentage, cap_full_frame, auto_aim_range;
+Graph_Data still_cross_line[10];
+char cap_text[30], auto_aim_text[10], fired_text[30];
 int count = 0;  // 计数器
 
+namespace
+{
+    constexpr u32 kCapBarYOffset = 18;
+    constexpr u32 kCapFrameWidth = 2;
+
+    void draw_cap_energy_graph(
+        Graph_Data *cap_bar,
+        Graph_Data *cap_frame,
+        u32 cap_bar_operate,
+        u32 cap_frame_operate) {
+        const u32 cap_bar_start_x = State_Data.cap_text_pos[0];
+        const u32 cap_bar_center_y =
+            State_Data.cap_text_pos[1] - State_Data.cap_text_size * 6 + kCapBarYOffset;
+        const u32 cap_bar_end_x =
+            cap_bar_start_x + ((State_Data.cap_display_length * State_Data.cap_percent) / 100);
+        const u32 cap_frame_half_height = State_Data.cap_display_with / 2;
+
+        Line_Draw(
+            cap_bar,
+            "cap",
+            cap_bar_operate,
+            1,
+            State_Data.cap_bar_color,
+            State_Data.cap_display_with,
+            cap_bar_start_x,
+            cap_bar_center_y,
+            cap_bar_end_x,
+            cap_bar_center_y);
+
+        Rectangle_Draw(
+            cap_frame,
+            "cfr",
+            cap_frame_operate,
+            1,
+            UI_Color_White,
+            kCapFrameWidth,
+            cap_bar_start_x,
+            cap_bar_center_y - cap_frame_half_height,
+            cap_bar_start_x + State_Data.cap_display_length,
+            cap_bar_center_y + cap_frame_half_height);
+    }
+}  // namespace
+
 void custom_ui_task(Device::Base *base_, uint8_t &robot_id_) {
+    Robot_ID_Read = robot_id_;
+    Cilent_ID_Read = 0x100 + robot_id_;
     custom_UI_init(base_);
     sync_parameter();
-    /*刷新超电部分*/
-    Line_Draw(
-        &cap_percentage,
-        "cap",
-        UI_Graph_ADD,
-        1,
-        State_Data.cap_bar_color,
-        State_Data.cap_display_with,
-        State_Data.cap_text_pos[0],
-        State_Data.cap_text_pos[1] - State_Data.cap_text_size * 4.8,
-        State_Data.cap_text_pos[0] +
-            ((State_Data.cap_display_length * State_Data.cap_percent) / 100),
-        State_Data.cap_text_pos[1] - State_Data.cap_text_size * 4.8);
-
-    UI_ReFresh(base_, 2, shoot_distance_bar, cap_percentage);
+    draw_cap_energy_graph(&cap_percentage, &cap_full_frame, UI_Graph_ADD, UI_Graph_ADD);
+    UI_ReFresh(base_, 2, cap_percentage, cap_full_frame);
     osDelay(100);
     state_str(cap_text, State_Data.cap_percent, State_Data.spin_state, State_Data.fric_state);
 
@@ -728,6 +763,11 @@ void custom_ui_task(Device::Base *base_, uint8_t &robot_id_) {
         cap_text);
     String_ReFresh(base_, state_text_data);
     osDelay(150);
+
+    std::snprintf(fired_text, sizeof(fired_text), "SHOT:%05d", UI_Data.fired_bullet_num);
+    String_Draw(&fired_text_data, "sht", UI_Graph_ADD, 1, UI_Color_Yellow, 25, 10, 2, 120, 800, fired_text);
+    String_ReFresh(base_, fired_text_data);
+    osDelay(100);
 
     // 瞄准框
     Rectangle_Draw(&auto_aim_range, "aui", UI_Graph_ADD, 0, UI_Color_Cyan, 3, 700, 300, 1300, 800);
@@ -748,21 +788,8 @@ void custom_ui_task(Device::Base *base_, uint8_t &robot_id_) {
         else if (UI_MODE == UI_INFANTRY)
             draw_crosshair_infantry(base_);
         osDelay(100);
-        /*刷新超电部分*/
-        Line_Draw(
-            &cap_percentage,
-            "cap",
-            UI_Graph_Change,
-            1,
-            State_Data.cap_bar_color,
-            State_Data.cap_display_with,
-            State_Data.cap_text_pos[0],
-            State_Data.cap_text_pos[1] - State_Data.cap_text_size * 4.8,
-            State_Data.cap_text_pos[0] +
-                ((State_Data.cap_display_length * State_Data.cap_percent) / 100),
-            State_Data.cap_text_pos[1] - State_Data.cap_text_size * 4.8);
-
-        UI_ReFresh(base_, 2, shoot_distance_bar, cap_percentage);
+        draw_cap_energy_graph(&cap_percentage, &cap_full_frame, UI_Graph_Change, UI_Graph_Change);
+        UI_ReFresh(base_, 2, cap_percentage, cap_full_frame);
         osDelay(100);
         state_str(cap_text, State_Data.cap_percent, State_Data.spin_state, State_Data.fric_state);
 
@@ -780,6 +807,23 @@ void custom_ui_task(Device::Base *base_, uint8_t &robot_id_) {
             cap_text);
         String_ReFresh(base_, state_text_data);
         osDelay(150);
+
+        std::snprintf(fired_text, sizeof(fired_text), "SHOT:%05d", UI_Data.fired_bullet_num);
+        String_Draw(
+            &fired_text_data,
+            "sht",
+            (count % 50 == 0) ? UI_Graph_ADD : UI_Graph_Change,
+            1,
+            UI_Color_Yellow,
+            25,
+            10,
+            2,
+            120,
+            800,
+            fired_text);
+        String_ReFresh(base_, fired_text_data);
+        osDelay(100);
+        count++;
 
         // 瞄准框
         Rectangle_Draw(
@@ -803,18 +847,36 @@ void update_ui_data(
     bool fric_state,
     bool auto_aim_state,
     bool spin_state,
-    float cap_state) {
+    float cap_state,
+    uint32_t purchased_bullet_num,
+    uint32_t remain_bullet_num) {
     UI_Data.distance = 10;
     UI_Data.auto_aim_state = auto_aim_state ? AUTOAIM_LOCKED : AUTOAIM_LOST;
     UI_Data.fric_state = fric_state;
     UI_Data.shoot_speed = 10;
     UI_Data.spin_state = spin_state;
     UI_Data.Super_cap_percent = cap_state;
+    const uint32_t fired_bullet_num =
+        purchased_bullet_num >= remain_bullet_num ? purchased_bullet_num - remain_bullet_num : 0U;
+    UI_Data.purchased_bullet_num = purchased_bullet_num > static_cast<uint32_t>(INT_MAX)
+                                       ? INT_MAX
+                                       : static_cast<int>(purchased_bullet_num);
+    UI_Data.remain_bullet_num = remain_bullet_num > static_cast<uint32_t>(INT_MAX)
+                                    ? INT_MAX
+                                    : static_cast<int>(remain_bullet_num);
+    UI_Data.fired_bullet_num = fired_bullet_num > static_cast<uint32_t>(INT_MAX)
+                                   ? INT_MAX
+                                   : static_cast<int>(fired_bullet_num);
 }
 
 /*画英雄的静止准星*/
 void draw_crosshair_hero(Device::Base *base_) {
     char line_id[7][3] = { "L1", "L2", "L3", "L4", "L5", "L6", "L7" };
+    const u32 ref_line_len_1 = (Crosshair_Data.cross_width * 4) / 5;
+    const u32 ref_line_len_2 = (Crosshair_Data.cross_width * 3) / 5;
+    const u32 ref_line_len_3 = (Crosshair_Data.cross_width * 2) / 5;
+    const u32 ref_line_spacing = 35;
+    const u32 ref_line_y_base = Crosshair_Data.center[1];
     /*准星*/
     // 横着的主准星
     Line_Draw(
@@ -856,6 +918,39 @@ void draw_crosshair_hero(Device::Base *base_) {
             Crosshair_Data.center[0] + (Crosshair_Data.ruler_length[i] / 2),
             Crosshair_Data.center[1] - (Crosshair_Data.ballistic_ruler[i] / 2));
     }
+    Line_Draw(
+        &still_cross_line[7],
+        "B1",
+        UI_Graph_ADD,
+        0,
+        Crosshair_Data.ruler_colar,
+        Crosshair_Data.line_width,
+        Crosshair_Data.center[0] - (ref_line_len_1 / 2),
+        ref_line_y_base,
+        Crosshair_Data.center[0] + (ref_line_len_1 / 2),
+        ref_line_y_base);
+    Line_Draw(
+        &still_cross_line[8],
+        "B2",
+        UI_Graph_ADD,
+        0,
+        Crosshair_Data.ruler_colar,
+        Crosshair_Data.line_width,
+        Crosshair_Data.center[0] - (ref_line_len_2 / 2),
+        ref_line_y_base - ref_line_spacing,
+        Crosshair_Data.center[0] + (ref_line_len_2 / 2),
+        ref_line_y_base - ref_line_spacing);
+    Line_Draw(
+        &still_cross_line[9],
+        "B3",
+        UI_Graph_ADD,
+        0,
+        Crosshair_Data.ruler_colar,
+        Crosshair_Data.line_width,
+        Crosshair_Data.center[0] - (ref_line_len_3 / 2),
+        ref_line_y_base - ref_line_spacing * 2,
+        Crosshair_Data.center[0] + (ref_line_len_3 / 2),
+        ref_line_y_base - ref_line_spacing * 2);
     UI_ReFresh(
         base_,
         7,
@@ -866,6 +961,8 @@ void draw_crosshair_hero(Device::Base *base_) {
         still_cross_line[4],
         still_cross_line[5],
         still_cross_line[6]);
+    UI_ReFresh(base_, 2, still_cross_line[7], still_cross_line[8]);
+    UI_ReFresh(base_, 1, still_cross_line[9]);
 
     osDelay(100);  // 确保间隔
     // 标尺
@@ -873,6 +970,11 @@ void draw_crosshair_hero(Device::Base *base_) {
 
 /*画步兵的静止准星*/
 void draw_crosshair_infantry(Device::Base *base_) {
+    const u32 ref_line_len_1 = (Crosshair_Data.cross_width * 4) / 5;
+    const u32 ref_line_len_2 = (Crosshair_Data.cross_width * 3) / 5;
+    const u32 ref_line_len_3 = (Crosshair_Data.cross_width * 2) / 5;
+    const u32 ref_line_spacing = 35;
+    const u32 ref_line_y_base = Crosshair_Data.center[1];
     /*准星*/
     // 横着的主准星
     Line_Draw(
@@ -900,8 +1002,47 @@ void draw_crosshair_infantry(Device::Base *base_) {
         Crosshair_Data.center[0],
         Crosshair_Data.center[1] - (Crosshair_Data.cross_high / 2) +
             Crosshair_Data.cross_high_offset);
-    // 相比英雄没有标尺
-    UI_ReFresh(base_, 2, still_cross_line[0], still_cross_line[1]);
+    Line_Draw(
+        &still_cross_line[7],
+        "B1",
+        UI_Graph_ADD,
+        0,
+        Crosshair_Data.ruler_colar,
+        Crosshair_Data.line_width,
+        Crosshair_Data.center[0] - (ref_line_len_1 / 2),
+        ref_line_y_base,
+        Crosshair_Data.center[0] + (ref_line_len_1 / 2),
+        ref_line_y_base);
+    Line_Draw(
+        &still_cross_line[8],
+        "B2",
+        UI_Graph_ADD,
+        0,
+        Crosshair_Data.ruler_colar,
+        Crosshair_Data.line_width,
+        Crosshair_Data.center[0] - (ref_line_len_2 / 2),
+        ref_line_y_base - ref_line_spacing,
+        Crosshair_Data.center[0] + (ref_line_len_2 / 2),
+        ref_line_y_base - ref_line_spacing);
+    Line_Draw(
+        &still_cross_line[9],
+        "B3",
+        UI_Graph_ADD,
+        0,
+        Crosshair_Data.ruler_colar,
+        Crosshair_Data.line_width,
+        Crosshair_Data.center[0] - (ref_line_len_3 / 2),
+        ref_line_y_base - ref_line_spacing * 2,
+        Crosshair_Data.center[0] + (ref_line_len_3 / 2),
+        ref_line_y_base - ref_line_spacing * 2);
+    UI_ReFresh(
+        base_,
+        5,
+        still_cross_line[0],
+        still_cross_line[1],
+        still_cross_line[7],
+        still_cross_line[8],
+        still_cross_line[9]);
 
     osDelay(100);  // 确保间隔
     // 标尺
@@ -929,18 +1070,7 @@ void update_dynamic_paramater(Device::Base *base_) {
     //        Crosshair_Data.dist_display_width);
 
     // 超电的刷新
-    Line_Draw(
-        &cap_percentage,
-        "cap",
-        UI_Graph_Change,
-        1,
-        State_Data.cap_bar_color,
-        State_Data.cap_display_with,
-        State_Data.cap_text_pos[0],
-        State_Data.cap_text_pos[1] - State_Data.cap_text_size * 4.8,
-        State_Data.cap_text_pos[0] +
-            ((State_Data.cap_display_length * State_Data.cap_percent) / 100),
-        State_Data.cap_text_pos[1] - State_Data.cap_text_size * 4.8);
+    draw_cap_energy_graph(&cap_percentage, &cap_full_frame, UI_Graph_Change, UI_Graph_Change);
     // 状态的刷新
     // state_str(cap_text, State_Data.cap_percent, State_Data.spin_state, State_Data.fric_state);
     // String_Draw(
@@ -988,9 +1118,9 @@ void update_dynamic_paramater(Device::Base *base_) {
 
     // 应用刷新(英雄显示测距和准星，步兵准星没做)
     if (UI_MODE == UI_HERO)
-        UI_ReFresh(base_, 2, shoot_distance_bar, cap_percentage);
+        UI_ReFresh(base_, 3, shoot_distance_bar, cap_percentage, cap_full_frame);
     else if (UI_MODE == UI_INFANTRY)
-        UI_ReFresh(base_, 1, cap_percentage);
+        UI_ReFresh(base_, 2, cap_percentage, cap_full_frame);
     osDelay(100);
     String_ReFresh(base_, state_text_data);
     osDelay(100);
@@ -1207,7 +1337,7 @@ void ui_parameter_init() {
     State_Data.cap_display_with = 30;             // 超电条宽度
     State_Data.cap_display_length = 250;          // 超电条长度
     State_Data.cap_text_size = 30;                // 字体大小
-    State_Data.cap_text_color = UI_Color_Yellow;  // 文字颜色
+    State_Data.cap_text_color = UI_Color_Cyan;    // 文字颜色
     State_Data.cap_bar_color = UI_Color_Cyan;     // 百分条颜色
 
     State_Data.cap_percent = 100;
@@ -1221,4 +1351,7 @@ void ui_parameter_init() {
     UI_Data.Super_cap_percent = 35.0;  // 超电百分比
     UI_Data.spin_state = 0;            // 自旋状态
     UI_Data.fric_state = 0;            // 摩擦轮状态
+    UI_Data.purchased_bullet_num = 0;
+    UI_Data.remain_bullet_num = 0;
+    UI_Data.fired_bullet_num = 0;
 }

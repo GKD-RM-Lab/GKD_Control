@@ -13,6 +13,10 @@ namespace Device
         constexpr int kMinFrameLength = 5 + 2 + 2;
         constexpr uint16_t kPowerHeatDataLength = 14;
         constexpr uint16_t kBulletRemainingLength = 8;
+        constexpr uint16_t kBulletRemainingLengthLegacy = 6;
+        constexpr uint64_t kRefereeOfflineTimeoutMs = 300U;
+        constexpr uint16_t kBulletAllowanceDeltaGuard = 1000U;
+        constexpr uint8_t kGameProgressSettlement = 5U;
 
         inline uint16_t readU16LE(const uint8_t *data) {
             return static_cast<uint16_t>(data[0]) |
@@ -179,14 +183,22 @@ namespace Device
                 }
                 break;
             }
-            case Referee::RefereeCmdId::BULLET_REMAINING_CMD: {
-                if (frame_header.data_length == kBulletRemainingLength) {
+             case Referee::RefereeCmdId::BULLET_REMAINING_CMD: {
+                if (frame_header.data_length == kBulletRemainingLength ||
+                    frame_header.data_length == kBulletRemainingLengthLegacy) {
                     const uint8_t *data = rx_data + 7;
                     auto &bullet_allowance_data = robot_set->referee_info.bullet_allowance_data;
                     bullet_allowance_data.bullet_allowance_num_17_mm = readU16LE(data);
                     bullet_allowance_data.bullet_allowance_num_42_mm = readU16LE(data + 2);
                     bullet_allowance_data.coin_remaining_num = readU16LE(data + 4);
-                    bullet_allowance_data.projectile_allowance_fortress = readU16LE(data + 6);
+                    bullet_allowance_data.projectile_allowance_fortress =
+                        frame_header.data_length == kBulletRemainingLength ? readU16LE(data + 6) : 0;
+                    parsed = true;
+                }
+                break;
+            }
+            case Referee::RefereeCmdId::SHOOT_DATA_CMD: {
+                if (frame_header.data_length == sizeof(Referee::ShootData)) {
                     parsed = true;
                 }
                 break;
@@ -206,8 +218,71 @@ namespace Device
     }
 
     void Dji_referee::task() {
+        static uint32_t fired_bullet_total = 0;
+        static uint16_t last_remain_bullet_num = 0;
+        static bool bullet_counter_inited = false;
+
         while (1) {
             read();
+
+            const uint64_t now_ms = static_cast<uint64_t>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch())
+                    .count());
+            const bool referee_connected =
+                robot_set->referee_last_rx_ms > 0 &&
+                now_ms >= robot_set->referee_last_rx_ms &&
+                now_ms - robot_set->referee_last_rx_ms <= kRefereeOfflineTimeoutMs;
+            const uint16_t remain_bullet_num = MUXDEF(
+                CONFIG_HERO,
+                robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_42_mm,
+                robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_17_mm);
+            const uint8_t game_progress =
+                robot_set->referee_info.game_status_data.game_progress & 0x0FU;
+            uint16_t stable_remain_bullet_num = remain_bullet_num;
+            if (game_progress == kGameProgressSettlement) {
+                fired_bullet_total = 0U;
+                if (referee_connected) {
+                    last_remain_bullet_num = remain_bullet_num;
+                    stable_remain_bullet_num = remain_bullet_num;
+                    bullet_counter_inited = true;
+                } else {
+                    last_remain_bullet_num = 0U;
+                    stable_remain_bullet_num = 0U;
+                    bullet_counter_inited = false;
+                }
+            } else if (referee_connected) {
+                if (!bullet_counter_inited) {
+                    fired_bullet_total = 0U;
+                    last_remain_bullet_num = remain_bullet_num;
+                    bullet_counter_inited = true;
+                } else {
+                    const int32_t remain_delta = static_cast<int32_t>(remain_bullet_num) -
+                                                static_cast<int32_t>(last_remain_bullet_num);
+                    const bool delta_is_valid =
+                        remain_delta <= static_cast<int32_t>(kBulletAllowanceDeltaGuard) &&
+                        remain_delta >= -static_cast<int32_t>(kBulletAllowanceDeltaGuard);
+                    if (delta_is_valid && remain_delta < 0) {
+                        const uint32_t consumed = static_cast<uint32_t>(-remain_delta);
+                        if (consumed > 0U) {
+                            fired_bullet_total += consumed;
+                        }
+                    }
+                    if (delta_is_valid) {
+                        last_remain_bullet_num = remain_bullet_num;
+                    } else {
+                        stable_remain_bullet_num = last_remain_bullet_num;
+                    }
+                }
+            } else if (bullet_counter_inited) {
+                stable_remain_bullet_num = last_remain_bullet_num;
+            }
+
+            const uint32_t purchased_bullet_num =
+                bullet_counter_inited ? fired_bullet_total + stable_remain_bullet_num : 0U;
+            const uint32_t remain_bullet_num_for_ui =
+                bullet_counter_inited ? stable_remain_bullet_num : 0U;
+
             bool referee_fire_allowance = MUXDEF(
                 CONFIG_HERO,
                 robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_42_mm > 0,
@@ -219,7 +294,9 @@ namespace Device
                 fric_state,
                 robot_set->cv_fire,
                 robot_set->spin_state,
-                ((float)robot_set->super_cap_info.capEnergy / 250) * 100);
+                ((float)robot_set->super_cap_info.capEnergy / 250) * 100,
+                purchased_bullet_num,
+                remain_bullet_num_for_ui);
 
 #ifdef CONFIG_INFANTRY
             sendLedFrame(robot_set, robot_set->friction_real_state);

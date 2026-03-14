@@ -303,6 +303,9 @@ typedef struct
     int spin_state;           // 小陀螺状态
     int fric_state;           // 摩擦轮状态
     int auto_aim_state;       // 自瞄状态
+    int purchased_bullet_num; // 已购买弹丸数量
+    int remain_bullet_num;    // 可发射弹丸数量
+    int fired_bullet_num;     // 已发射弹丸数量
 } UI_DisplayData_Type;
 
 /*描述准星的结构体*/
@@ -362,7 +365,7 @@ typedef struct
 
 void custom_ui_task(Device::Base *base_, uint8_t &robot_id_);
 extern void custom_UI_init(Device::Base *base_);
-extern UI_DisplayData_Type UI_Data;
+extern volatile UI_DisplayData_Type UI_Data;
 
 void draw_crosshair_hero(Device::Base *base_);
 void draw_crosshair_infantry(Device::Base *base_);
@@ -385,7 +388,9 @@ void update_ui_data(
     bool fric_state,
     bool auto_aim_state,
     bool spin_state,
-    float cap_state);
+    float cap_state,
+    uint32_t purchased_bullet_num,
+    uint32_t remain_bullet_num);
 
 #pragma pack(pop)
 #endif
