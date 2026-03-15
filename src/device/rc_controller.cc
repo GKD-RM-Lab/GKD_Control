@@ -30,7 +30,8 @@ namespace Device
         static bool friction_key_pressed_last = false;
         static bool spin_enabled = false;
         static const auto runtime_begin = std::chrono::steady_clock::now();
-
+        const auto elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>
+            (std::chrono::steady_clock::now() - runtime_begin) .count();
        
         if (pkg.s1 == S1_DOWN && pkg.s2 == S2_DOWN && pkg.ch4 == ROLL_UP_MAX) {
             inited = true;
@@ -89,9 +90,6 @@ namespace Device
                 wz_key_pressed_last = false;
             }
             if (spin_enabled) {
-                const auto elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(
-                                                 std::chrono::steady_clock::now() - runtime_begin)
-                                                 .count();
                 robot_set->wz_set =
                     1.2f + static_cast<float>(elapsed_seconds % 4LL) / 10.0f;
             } else {
@@ -172,7 +170,8 @@ namespace Device
             }
 
             if (pkg.s1 == S1_UP)
-                robot_set->wz_set = 1.0;
+                 robot_set->wz_set =
+                    1.2f + static_cast<float>(elapsed_seconds % 4LL) / 10.0f;
             else
                 robot_set->wz_set = 0;
 
