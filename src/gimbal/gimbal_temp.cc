@@ -281,8 +281,8 @@ namespace Gimbal
             MUXDEF(CONFIG_SENTRY, pkg.yaw = fake_yaw_abs, pkg.yaw = imu_yaw.yaw);
             pkg.pitch = imu_pitch.pitch;
             pkg.roll = imu_pitch.roll;
-            // pkg.red = robot_set->referee_info.game_robot_status_data.robot_id < 100;
-            // LOG_INF("%s\n", (pkg.red == 1) ? "red" : "blue" );
+            pkg.red = robot_set->referee_info.game_robot_status_data.robot_id < 100;
+            // LOG_INFO("%s\n", (pkg.red == 1) ? "red" : "blue" );
             // LOG_INFO("pkg.roll:%f\n", pkg.roll);
             IO::io<SOCKET>["AUTO_AIM_CONTROL"]->send(pkg);
 
@@ -301,8 +301,8 @@ namespace Gimbal
         // auto newYawOffSet = yaw_motor.data_.rotor_angle / Hardware::DJIMotor::ECD_8192_TO_RAD;
         // LOG_INFO("Yawoffset:%f\n", newYawOffSet);
         // gimbal sentry follow needs
-        // LOG_INFO("imu.pitch:%f\n", imu.pitch);
-        // LOG_INFO("imu.yaw:%f\n", imu.yaw);
+        // LOG_INFO("imu.pitch:%f\n", imu_pitch.pitch);
+        // LOG_INFO("imu.yaw:%f\n", imu_yaw.yaw);
         // LOG_INFO("imu.pitch_rate:%f\n", imu.pitch_rate);
         // LOG_INFO("imu.yaw_rate:%f\n", imu_yaw.yaw_rate);
         // imu_log_write(

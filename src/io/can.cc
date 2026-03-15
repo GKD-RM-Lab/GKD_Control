@@ -27,7 +27,7 @@ namespace IO
         // create CAN socket
         if ((soket_id = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
             LOG_ERR("Error while creating socket");
-            exit(-1);
+            // exit(-1);
         }
 
         std::strcpy(ifr->ifr_name, can_channel);
@@ -39,7 +39,7 @@ namespace IO
         // bind CAN socket to the given interface
         if (bind(soket_id, (sockaddr *)addr, sizeof(*addr)) < 0) {
             perror("Error in socket bind");
-            exit(-1);
+            // exit(-1);
         }
         init_flag = true;
         send_fail_count_ = 0;
@@ -78,12 +78,11 @@ namespace IO
 
         send_fail_count_++;
         if (send_fail_count_ >= kSendRecoverThreshold) {
-            // LOG_ERR(
-            //     "CAN[%s] send failed %u times (errno=%d), rebuilding socket\n",
-            //     can_channel_.c_str(),
-            //     send_fail_count_,
-            //     errno);
-            // exit(-1);
+            LOG_ERR(
+                "CAN[%s] send failed %u times (errno=%d), rebuilding socket\n",
+                can_channel_.c_str(),
+                send_fail_count_,
+                errno);
         }
         return false;
     }

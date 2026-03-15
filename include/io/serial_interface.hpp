@@ -30,6 +30,7 @@ namespace IO
                     }
                 } catch (const std::exception &close_error) {
                     LOG_ERR("serial close failed (%s): %s\n", name.c_str(), close_error.what());
+                    // exit(-1);
                 }
             }
         }
