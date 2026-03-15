@@ -325,11 +325,6 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
         static bool excitationGoodLatched = false;
         static uint16_t excitationOnDebounce = 0U;
         static uint16_t excitationOffDebounce = 0U;
-        static uint64_t lastTuneLogMs = 0U;
-        static bool tuneAvgInitialized = false;
-        static float k1CandAvg = 0.0f;
-        static float k2CandAvg = 0.0f;
-        static float k3CandAvg = 0.0f;
 
         isInitialized = true;
 
