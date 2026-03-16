@@ -59,10 +59,10 @@ namespace Config
 
         .yaw_motor_config = Hardware::DJIMotorConfig(6020, "can0", 1),
         .pitch_motor_config = Hardware::DJIMotorConfig(6020, "can0", 2),
-        .yaw_rate_pid_config = {
-            .kp =           16668.f,
-            .ki =           234.f,
-            .kd =           200.f,
+        .yaw_rate_pid_config = {        // YAW 速度环PID
+            .kp =           30335.664f,
+            .ki =           383.9739482f,
+            .kd =           0.0f,
             .max_out =      30000.0f,
             .max_iout =     15000.0f,
         },
@@ -92,16 +92,17 @@ namespace Config
         //     .max_iout =     0.0f,
         // },
 
-         .yaw_absolute_pid_config = {
-            .kp =           8.0f,
-            .ki =           0.062f,
-            .kd =           0.0f,
+        // PID POSITION ABSOLUTE 科学调参ok 3.17
+        .yaw_absolute_pid_config = {    //yaw 位置环 pid
+            .kp =           -12.052352f,
+            .ki =           -0.007479f,
+            .kd =           -5.0f,
             .max_out =      60.0f,
             .max_iout =     0.0f,
         },
                 //PID PITCH POSITION
         .pitch_absolute_pid_config = {
-            .kp =           13.45f,
+            .kp =           15.45f,
             .ki =           0.0f,
             .kd =           0.0f,
             .max_out =      10.0f,

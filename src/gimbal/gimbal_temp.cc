@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdio>
 #include <fstream>
 #include <iomanip>
 #include <mutex>
@@ -16,6 +17,7 @@
 #include "types.hpp"
 #include "user_lib.hpp"
 #include "utils.hpp"
+#include <cmath>
 
 namespace {
 
@@ -100,7 +102,7 @@ namespace Gimbal
             yaw_rela = &robot_set->gimbalT_2_yaw_reletive;
         }
 
-        yaw_motor.setCtrl(Pid::PidPosition(config.yaw_rate_pid_config, yaw_gyro));
+        yaw_motor.setCtrl(Pid::PidPosition(config.yaw_rate_pid_config, yaw_gyro)); //速度环     
         pitch_motor.setCtrl(
             Pid::PidPosition(config.pitch_rate_pid_config, pitch_gyro) >>
             Pid::Invert(config.gimbal_motor_dir));
@@ -109,9 +111,9 @@ namespace Gimbal
         MUXDEF(
             CONFIG_SENTRY,
             yaw_absolute_pid =
-                Pid::PidRad(config.yaw_absolute_pid_config, fake_yaw_abs) >> Pid::Invert(-1),
+                Pid::PidRad(config.yaw_absolute_pid_config, fake_yaw_abs),
             yaw_absolute_pid =
-                Pid::PidRad(config.yaw_absolute_pid_config, imu_yaw.yaw) >> Pid::Invert(-1));
+                Pid::PidRad(config.yaw_absolute_pid_config, imu_yaw.yaw) );   //位置环
 
         pitch_absolute_pid = Pid::PidRad(config.pitch_absolute_pid_config, imu_pitch.pitch);
 
@@ -186,8 +188,13 @@ namespace Gimbal
             if (delta > 1000)
                 exit(-1);
         }
-        while (robot_set->inited != Types::Init_status::INIT_FINISH) {
-        // while(1) {
+        static const auto runtime_begin = std::chrono::steady_clock::now();
+       
+       
+        // while (robot_set->inited != Types::Init_status::INIT_FINISH) {
+        while(1) {
+             const auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
+            (std::chrono::steady_clock::now() - runtime_begin) .count();
             update_data();
             if (config.gimbal_id == 2) {
                 robot_set->inited |= 1 << 1;
@@ -195,9 +202,67 @@ namespace Gimbal
             // delta++;
             //  if (delta > 10000)
                 // exit(-1);
+
+            if ( elapsed_milliseconds % 4000 < 2000 ){
+                -1.f >> yaw_absolute_pid >> yaw_motor;
+            } else if(  elapsed_milliseconds % 4000 > 2000){
+                -1.8f >> yaw_absolute_pid >> yaw_motor;
+            }
+
+            // if ( elapsed_milliseconds % 4000 < 2000 ){
+            //     -2.f >> yaw_motor;
+            // } else if(  elapsed_milliseconds % 4000 > 2000){
+            //     2.0f >> yaw_motor;
+            // }
+
+
+            // -1.f >> yaw_relative_pid >> yaw_motor;
+
             // 1.f >> yaw_motor;
-            0.f >> yaw_relative_pid >> yaw_motor;
-            0.f >> pitch_absolute_pid >> pitch_motor;
+            // 0.f >> yaw_absolute_pid >> yaw_motor;
+            // 0.f >> pitch_absolute_pid >> pitch_motor;
+            
+            // 速度环
+            // int max_current = 15000;
+            // if (elapsed_milliseconds % 3600 < 200) {
+            //     yaw_motor.set(0);
+            // } else if (elapsed_milliseconds % 3600 > 200 && elapsed_milliseconds % 3600 < 1200) {
+            //     yaw_motor.set(max_current);
+            // } else if (elapsed_milliseconds % 3600 > 1200 && elapsed_milliseconds % 3600 < 1800) {
+            //     yaw_motor.set(-max_current);
+            // } else if (elapsed_milliseconds % 3600 > 1800 && elapsed_milliseconds % 3600 < 2000) {
+            //     yaw_motor.set(0);
+            // } else if (elapsed_milliseconds % 3600 > 2000 && elapsed_milliseconds % 3600 < 2800) {
+            //     yaw_motor.set(max_current*0.5);
+            // } else if (elapsed_milliseconds % 3600 > 2800 && elapsed_milliseconds % 3600 < 3600) {
+            //     yaw_motor.set(-max_current*0.5);
+            // }
+
+            // 速度环 正弦
+            // yaw_motor.set(std::sin(2.0 * std::acos(-1.0) * elapsed_milliseconds / 1500.0) * max_current);
+
+            float max_speed = 0.2;
+            float speed_target = 0;
+            // float speed_targe1t = std::sin(2.0 * std::acos(-1.0) * elapsed_milliseconds / 800.0) * max_speed;
+            // speed_target >> yaw_motor ;
+
+            // if (elapsed_milliseconds % 2000 < 200) {
+            //     yaw_motor.set(0);
+            //     speed_target = 0;
+            // } else if (elapsed_milliseconds % 2000 > 200 && elapsed_milliseconds % 2000 < 1200) {
+            //     yaw_motor.set(max_speed);
+            //     speed_target = max_speed;
+            // } else {
+            //     yaw_motor.set(-max_speed);
+            //     speed_target = -max_speed;
+            // }
+
+            // YAW 速度环 科学调参采集
+            // printf("%ld,%d,%f\n", elapsed_milliseconds, yaw_motor.give_current, yaw_gyro);
+
+            // YAW 位置环
+            printf("%ld,%f,%f\n", elapsed_milliseconds, speed_target, imu_yaw.yaw);
+            // printf("%d\n",yaw_motor.motor_measure_.ecd);
             // LOG_INFO(
             //    "imu : %6f %6f %6f %6d\n",
             //    imu.yaw,
@@ -310,7 +375,7 @@ namespace Gimbal
         // LOG_INFO("Yawoffset:%f\n", newYawOffSet);
         // gimbal sentry follow needs
         // LOG_INFO("imu.pitch:%f\n", imu_pitch.pitch);
-        // LOG_INFO("imu.yaw:%f\n", imu_yaw.yaw);
+        //  LOG_INFO("imu.yaw:%f\n", imu_yaw.yaw);
         // LOG_INFO("imu.pitch_rate:%f\n", imu.pitch_rate);
         // LOG_INFO("imu.yaw_rate:%f\n", imu_yaw.yaw_rate);
         // imu_log_write(
