@@ -174,7 +174,7 @@ namespace Gimbal
 
     void GimbalT::init_task() {
         static int delta = 0;
-        while (imu_yaw.offline() || imu_pitch.offline() || yaw_motor.offline() || pitch_motor.offline()) {
+        while ((imu_yaw.offline() && imu_pitch.offline()) || yaw_motor.offline() || pitch_motor.offline()) {
             UserLib::sleep_ms(Config::GIMBAL_CONTROL_TIME);
             LOG_INFO(
                 "status: imu_yaw:%s | imu_pitch:%s | yaw:%s | pitch:%s\n",
@@ -293,6 +293,14 @@ namespace Gimbal
     }
 
     void GimbalT::update_data() {
+        if (imu_yaw.offline() && !imu_pitch.offline()) {
+            imu_yaw.yaw = imu_pitch.yaw;
+            imu_yaw.pitch = imu_pitch.pitch;
+            imu_yaw.roll = imu_pitch.roll;
+            imu_yaw.yaw_rate = imu_pitch.yaw_rate;
+            imu_yaw.pitch_rate = imu_pitch.pitch_rate;
+            imu_yaw.roll_rate = imu_pitch.roll_rate;
+        }
         yaw_relative = UserLib::rad_format(
             yaw_motor.data_.rotor_angle - Hardware::DJIMotor::ECD_8192_TO_RAD * config.YawOffSet);
         yaw_gyro = (std::cos(imu_pitch.pitch) * imu_yaw.yaw_rate -
