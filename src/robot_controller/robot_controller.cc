@@ -31,7 +31,7 @@ namespace Robot
         super_cap.set(true, 30);
         );
         
-        // chassis.init(robot_set);
+        chassis.init(robot_set);
         gimbal.init(robot_set);
         IFDEF(CONFIG_SENTRY, gimbal_sentry.init(robot_set));
 
@@ -48,7 +48,7 @@ namespace Robot
 
     void Robot_ctrl::start() {
         threads.emplace_back(&Config::GimbalType::task, &gimbal);
-        // threads.emplace_back(&Chassis::Chassis::task, &chassis);
+        threads.emplace_back(&Chassis::Chassis::task, &chassis);
        threads.emplace_back(&Device::Dji_referee::task, &referee);
        threads.emplace_back(&Device::Dji_referee::task_ui, &referee);
         IFDEF(CONFIG_SENTRY, threads.emplace_back(&Gimbal::GimbalT::task, &gimbal_sentry));

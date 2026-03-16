@@ -111,9 +111,9 @@ namespace Gimbal
         MUXDEF(
             CONFIG_SENTRY,
             yaw_absolute_pid =
-                Pid::PidRad(config.yaw_absolute_pid_config, fake_yaw_abs),
+                Pid::PidRad(config.yaw_absolute_pid_config, fake_yaw_abs) >> Pid::Invert(-1),
             yaw_absolute_pid =
-                Pid::PidRad(config.yaw_absolute_pid_config, imu_yaw.yaw) );   //位置环
+                Pid::PidRad(config.yaw_absolute_pid_config, imu_yaw.yaw) ) >> Pid::Invert(-1);   //位置环
 
         pitch_absolute_pid = Pid::PidRad(config.pitch_absolute_pid_config, imu_pitch.pitch);
 
@@ -191,8 +191,8 @@ namespace Gimbal
         static const auto runtime_begin = std::chrono::steady_clock::now();
        
        
-        // while (robot_set->inited != Types::Init_status::INIT_FINISH) {
-        while(1) {
+        while (robot_set->inited != Types::Init_status::INIT_FINISH) {
+        // while(1) {
              const auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
             (std::chrono::steady_clock::now() - runtime_begin) .count();
             update_data();
@@ -203,27 +203,28 @@ namespace Gimbal
             //  if (delta > 10000)
                 // exit(-1);
 
-            if ( elapsed_milliseconds % 4000 < 2000 ){
-                -1.f >> yaw_absolute_pid >> yaw_motor;
-            } else if(  elapsed_milliseconds % 4000 > 2000){
-                -1.8f >> yaw_absolute_pid >> yaw_motor;
-            }
+            // if ( elapsed_milliseconds % 4000 < 2000 ){
+            //     -1.f >> yaw_absolute_pid >> yaw_motor;
+            // } else if(  elapsed_milliseconds % 4000 > 2000){
+            //     -1.8f >> yaw_absolute_pid >> yaw_motor;
+            // }
 
             // if ( elapsed_milliseconds % 4000 < 2000 ){
-            //     -2.f >> yaw_motor;
+            //     -0.2f >> yaw_motor;
             // } else if(  elapsed_milliseconds % 4000 > 2000){
-            //     2.0f >> yaw_motor;
+            //     0.2f >> yaw_motor;
             // }
+            // 0.0f >> yaw_motor;
 
 
             // -1.f >> yaw_relative_pid >> yaw_motor;
 
             // 1.f >> yaw_motor;
-            // 0.f >> yaw_absolute_pid >> yaw_motor;
-            // 0.f >> pitch_absolute_pid >> pitch_motor;
+            0.f >> yaw_absolute_pid >> yaw_motor;
+            0.f >> pitch_absolute_pid >> pitch_motor;
             
-            // 速度环
-            // int max_current = 15000;
+            // 速度环 阶跃
+            // int max_current = 5000;
             // if (elapsed_milliseconds % 3600 < 200) {
             //     yaw_motor.set(0);
             // } else if (elapsed_milliseconds % 3600 > 200 && elapsed_milliseconds % 3600 < 1200) {
@@ -241,18 +242,33 @@ namespace Gimbal
             // 速度环 正弦
             // yaw_motor.set(std::sin(2.0 * std::acos(-1.0) * elapsed_milliseconds / 1500.0) * max_current);
 
-            float max_speed = 0.2;
-            float speed_target = 0;
-            // float speed_targe1t = std::sin(2.0 * std::acos(-1.0) * elapsed_milliseconds / 800.0) * max_speed;
-            // speed_target >> yaw_motor ;
+            // float max_speed = 4.4;
+            // float speed_target = 0;
 
-            // if (elapsed_milliseconds % 2000 < 200) {
+            // if (elapsed_milliseconds % 3600*0.5 < 200*0.5) {
             //     yaw_motor.set(0);
             //     speed_target = 0;
-            // } else if (elapsed_milliseconds % 2000 > 200 && elapsed_milliseconds % 2000 < 1200) {
+            // } else if (elapsed_milliseconds % 3600*0.5 > 200*0.5 && elapsed_milliseconds % 3600*0.5 < 1200*0.5) {
             //     yaw_motor.set(max_speed);
             //     speed_target = max_speed;
-            // } else {
+            // } else if (elapsed_milliseconds % 3600*0.5 > 1200*0.5 && elapsed_milliseconds % 3600*0.5 < 1800*0.5) {
+            //     yaw_motor.set(-max_speed);
+            //     speed_target = -max_speed;
+            // } else if (elapsed_milliseconds % 3600*0.5 > 1800*0.5 && elapsed_milliseconds % 3600*0.5 < 2000*0.5) {
+            //     yaw_motor.set(0);
+            //     speed_target = 0;
+            // } else if (elapsed_milliseconds % 3600*0.5 > 2000*0.5 && elapsed_milliseconds % 3600*0.5 < 2800*0.5) {
+            //     yaw_motor.set(max_speed*0.1);
+            //     speed_target = max_speed*0.1;
+            // } else if (elapsed_milliseconds % 3600*0.5 > 2800*0.5 && elapsed_milliseconds % 3600*0.5 < 3600*0.5) {
+            //     yaw_motor.set(-max_speed*0.1);
+            //     speed_target = -max_speed*0.1;
+            // }
+
+            // if (elapsed_milliseconds % 600 < 300) {
+            //     yaw_motor.set(max_speed);
+            //     speed_target = max_speed;
+            // } else{
             //     yaw_motor.set(-max_speed);
             //     speed_target = -max_speed;
             // }
@@ -261,7 +277,7 @@ namespace Gimbal
             // printf("%ld,%d,%f\n", elapsed_milliseconds, yaw_motor.give_current, yaw_gyro);
 
             // YAW 位置环
-            printf("%ld,%f,%f\n", elapsed_milliseconds, speed_target, imu_yaw.yaw);
+            // printf("%ld,%f,%f\n", elapsed_milliseconds, speed_target, imu_yaw.yaw);
             // printf("%d\n",yaw_motor.motor_measure_.ecd);
             // LOG_INFO(
             //    "imu : %6f %6f %6f %6d\n",
