@@ -220,7 +220,7 @@ namespace Gimbal
             // -1.f >> yaw_relative_pid >> yaw_motor;
 
             // 1.f >> yaw_motor;
-            0.f >> yaw_absolute_pid >> yaw_motor;
+            0.f >> yaw_relative_pid >> yaw_motor;
             0.f >> pitch_absolute_pid >> pitch_motor;
             
             // 速度环 阶跃
@@ -349,6 +349,7 @@ namespace Gimbal
                     ty >>
                     yaw_absolute_pid >> yaw_motor;
                     , *yaw_set >> yaw_absolute_pid >> yaw_motor;)
+                // LOG_INFO("yaw set %f, imu yaw %f\n", *yaw_set, imu_yaw.yaw);
                 //LOG_INFO("mode:%d\n", robot_set->mode);
                 // LOG_INFO("%f\n", *pitch_set);
                 *pitch_set >> pitch_absolute_pid >> pitch_motor;
@@ -394,8 +395,8 @@ namespace Gimbal
         //  LOG_INFO("imu.yaw:%f\n", imu_yaw.yaw);
         // LOG_INFO("imu.pitch_rate:%f\n", imu.pitch_rate);
         // LOG_INFO("imu.yaw_rate:%f\n", imu_yaw.yaw_rate);
-        // imu_log_write(
-        //     config.gimbal_id, imu_pitch.pitch, imu_yaw.yaw, imu_pitch.pitch_rate, imu_yaw.yaw_rate);
+        imu_log_write(
+            config.gimbal_id, imu_pitch.pitch, imu_yaw.yaw, imu_pitch.pitch_rate, imu_yaw.yaw_rate);
         *yaw_rela = yaw_relative;
         fake_yaw_abs = robot_set->gimbal_sentry_yaw - yaw_relative;
     }

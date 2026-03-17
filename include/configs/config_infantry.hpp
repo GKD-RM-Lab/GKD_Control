@@ -60,9 +60,9 @@ namespace Config
         .yaw_motor_config = Hardware::DJIMotorConfig(6020, "can0", 1),
         .pitch_motor_config = Hardware::DJIMotorConfig(6020, "can0", 2),
         .yaw_rate_pid_config = {        // YAW 速度环PID
-            .kp =           31974.05045f,
-            .ki =           374.2135f,
-            .kd =           0.0f,
+            .kp =           28000.05045f,
+            .ki =           300.2135f,
+            .kd =           20.0f,
             .max_out =      30000.0f,
             .max_iout =     5000.0f,
         },
@@ -76,13 +76,43 @@ namespace Config
         },
 				// PID POSITION RELATIVE
         .yaw_relative_pid_config ={
-            .kp =           10.0f,
-            .ki =           0.0f,
-            .kd =           0.3f,
+            .kp =           6.0f,
+            .ki =           0.f,
+            .kd =           30.f,
             .max_out =      10.0f,
-            .max_iout =     0.0f,
+            .max_iout =     10.0f,
         },
-				// PID POSITION ABSOLUTE 科学调参ok 3.17
+    
+         // PID POSITION ABSOLUTE 
+        .yaw_absolute_pid_config = {    //yaw 位置环 pid
+            .kp =           9.f,
+            .ki =           0.1f,
+            .kd =           10.f,
+            .max_out =      60.0f,
+            .max_iout =     0.f,
+        },
+
+        // .yaw_absolute_pid_config = {    //yaw 位置环 pid
+        //     .kp =           10.f,
+        //     .ki =           0.0001f,
+        //     .kd =           80.f,
+        //     .max_out =      60.0f,
+        //     .max_iout =     0.0f,
+        // },
+
+
+        //     .yaw_relative_pid_config ={
+        //     .kp =           10.0f,
+        //     .ki =           0.0f,
+        //     .kd =           0.3f,
+        //     .max_out =      10.0f,
+        //     .max_iout =     0.0f,
+        // },
+
+       
+
+
+        		// PID POSITION ABSOLUTE 科学调参ok 3.17
                 // 手调 by dxy 2.28
         // .yaw_absolute_pid_config = {
         //     .kp =           13.0f,
@@ -92,14 +122,14 @@ namespace Config
         //     .max_iout =     0.0f,
         // },
 
-        // PID POSITION ABSOLUTE 科学调参ok 3.17
-        .yaw_absolute_pid_config = {    //yaw 位置环 pid
-            .kp =           10.376936f,
-            .ki =           0.006265f,
-            .kd =           0.0f,
-            .max_out =      60.0f,
-            .max_iout =     0.0f,
-        },
+        // PID POSITION ABSOLUTE 科学调参ok 3.17(2026)
+        // .yaw_absolute_pid_config = {    //yaw 位置环 pid
+        //     .kp =           10.376936f,
+        //     .ki =           0.006265f,
+        //     .kd =           0.0f,
+        //     .max_out =      60.0f,
+        //     .max_iout =     0.0f,
+        // },
                 //PID PITCH POSITION
         .pitch_absolute_pid_config = {
             .kp =           15.45f,
