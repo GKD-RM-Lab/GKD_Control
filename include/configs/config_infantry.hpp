@@ -59,37 +59,65 @@ namespace Config
 
         .yaw_motor_config = Hardware::DJIMotorConfig(6020, "can0", 1),
         .pitch_motor_config = Hardware::DJIMotorConfig(6020, "can0", 2),
-        .yaw_rate_pid_config = {        // YAW 速度环PID
-            .kp =           28000.05045f,
-            .ki =           300.2135f,
-            .kd =           20.0f,
+        // .yaw_rate_pid_config = {        // YAW 速度环PID
+        //     .kp =           25000.05045f,
+        //     .ki =           300.2135f,
+        //     .kd =           20.0f,
+        //     .max_out =      30000.0f,
+        //     .max_iout =     5000.0f,
+        // },
+        .yaw_rate_pid_config = {
+            .kp =           16668.f,
+            .ki =           234.f,
+            .kd =           200.f,
             .max_out =      30000.0f,
-            .max_iout =     5000.0f,
+            .max_iout =     15000.0f,
         },
                 //PITCH SPEED PID 科学调参OK 3.17
-        .pitch_rate_pid_config = {
+        // .pitch_rate_pid_config = {
+        //     .kp =           9073.0f,
+        //     .ki =           283.0f,
+        //     .kd =           0.0f,
+        //     .max_out =      30000.0f,
+        //     .max_iout =     15000.0f,
+        // },
+         .pitch_rate_pid_config = {
             .kp =           9073.0f,
             .ki =           283.0f,
             .kd =           0.0f,
             .max_out =      30000.0f,
-            .max_iout =     15000.0f,
+            .max_iout =     5000.0f,
         },
 				// PID POSITION RELATIVE
-        .yaw_relative_pid_config ={
-            .kp =           6.0f,
-            .ki =           0.f,
-            .kd =           30.f,
+        // .yaw_relative_pid_config ={      s
+        //     .kp =           6.0f,
+        //     .ki =           0.f,
+        //     .kd =           30.f,
+        //     .max_out =      10.0f,
+        //     .max_iout =     10.0f,
+        // },
+         .yaw_relative_pid_config ={
+            .kp =           10.0f,
+            .ki =           0.0f,
+            .kd =           0.3f,
             .max_out =      10.0f,
-            .max_iout =     10.0f,
+            .max_iout =     0.0f,
         },
     
          // PID POSITION ABSOLUTE 
-        .yaw_absolute_pid_config = {    //yaw 位置环 pid
-            .kp =           9.f,
-            .ki =           0.1f,
-            .kd =           10.f,
+        // .yaw_absolute_pid_config = {    //yaw 位置环 pid
+        //     .kp =           4.f,
+        //     .ki =           0.0f,
+        //     .kd =           10.f,
+        //     .max_out =      30.0f,
+        //     .max_iout =     0.f,
+        // },
+        .yaw_absolute_pid_config = {
+            .kp =           8.0f,
+            .ki =           0.062f,
+            .kd =           0.0f,
             .max_out =      60.0f,
-            .max_iout =     0.f,
+            .max_iout =     0.0f,
         },
 
         // .yaw_absolute_pid_config = {    //yaw 位置环 pid
@@ -131,8 +159,15 @@ namespace Config
         //     .max_iout =     0.0f,
         // },
                 //PID PITCH POSITION
+        // .pitch_absolute_pid_config = {
+        //     .kp =           15.45f,
+        //     .ki =           0.0f,
+        //     .kd =           0.0f,
+        //     .max_out =      10.0f,
+        //     .max_iout =     0.0f,
+        // },
         .pitch_absolute_pid_config = {
-            .kp =           15.45f,
+            .kp =           13.45f,
             .ki =           0.0f,
             .kd =           0.0f,
             .max_out =      10.0f,
@@ -141,7 +176,7 @@ namespace Config
         .gimbal_motor_dir = 1.0,
         .gimbal_id = 1,
         .ControlTime = 1,
-        .YawOffSet = 1121,
+        .YawOffSet = 4207,
         .shoot_config = {
             .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 1, 0.075},
             .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 2, 0.075},
@@ -246,7 +281,7 @@ namespace Config
     constexpr fp32 CHASSIS_CONTROL_FREQUENCE = 500.0f;
 #define STAND
 #ifdef STAND
-    constexpr fp32 GIMBAL1_YAW_OFFSET_ECD = 3459;
+    constexpr fp32 GIMBAL1_YAW_OFFSET_ECD = 3059;
     constexpr fp32 GIMBAL1_PITCH_OFFSET_ECD = 2194;
 
     constexpr fp32 GIMBAL2_YAW_OFFSET_ECD = 3366;
