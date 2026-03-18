@@ -1,6 +1,5 @@
 #pragma once
 
-#include <atomic>
 #include <memory>
 
 #include "device/imu.hpp"
@@ -52,8 +51,6 @@ namespace Gimbal
         Shoot::Shoot shoot;
 
         std::chrono::_V2::steady_clock::time_point receive_auto_aim;
-        std::atomic<fp32> last_auto_aim_yaw_set{0.f};
-        std::atomic<fp32> last_auto_aim_pitch_set{0.f};
 
     };
 

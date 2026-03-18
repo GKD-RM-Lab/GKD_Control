@@ -1,5 +1,6 @@
 import argparse
 import time
+from pathlib import Path
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -89,9 +90,13 @@ def load_imu_csv(path: str, gimbal_id: Optional[int]):
     return np.array(t_s), pitch_set_arr, yaw_set_arr, np.array(pitch), np.array(yaw), None, None, has_set, False
 
 
+def clear_log_file(path: str):
+    Path(path).write_text("", encoding="utf-8")
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Plot IMU pitch/yaw, auto-aim setpoint and rate from log/imu.txt"
+        description="Plot IMU pitch/yaw, setpoint and rate from log/imu.txt"
     )
     parser.add_argument("--file", default="../log/imu.txt", help="path to imu log file")
     parser.add_argument("--id", type=int, default=None, help="filter by gimbal id (optional)")
@@ -155,18 +160,18 @@ def main():
     fig.suptitle(title)
 
     if has_set:
-        ax_pitch.plot(t_s, pitch_set, label=f"auto_aim_pitch_set ({unit})", color="tab:green", alpha=0.9)
+        ax_pitch.plot(t_s, pitch_set, label=f"pitch_set ({unit})", color="tab:green", alpha=0.9)
         ax_pitch.plot(t_s, pitch, label=f"pitch ({unit})", color="tab:blue", alpha=0.9)
         ax_pitch.set_ylabel(f"pitch ({unit})")
-        ax_pitch.set_title("Pitch vs Auto Aim Setpoint")
+        ax_pitch.set_title("Pitch vs Pitch Setpoint")
         ax_pitch.legend(loc="upper right")
         ax_pitch.grid(True)
 
-        ax_yaw.plot(t_s, yaw_set, label=f"auto_aim_yaw_set ({unit})", color="tab:red", alpha=0.9)
+        ax_yaw.plot(t_s, yaw_set, label=f"yaw_set ({unit})", color="tab:red", alpha=0.9)
         ax_yaw.plot(t_s, yaw, label=f"yaw ({unit})", color="tab:orange", alpha=0.9)
         ax_yaw.set_xlabel("t (s)")
         ax_yaw.set_ylabel(f"yaw ({unit})")
-        ax_yaw.set_title("Yaw vs Auto Aim Setpoint")
+        ax_yaw.set_title("Yaw vs Yaw Setpoint")
         ax_yaw.legend(loc="upper right")
         ax_yaw.grid(True)
     else:
@@ -191,7 +196,9 @@ def main():
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     filename = f"imu_plot_{timestamp}.png"
     fig.savefig(filename, bbox_inches="tight", dpi=300)
+    clear_log_file(args.file)
     print(f"\n✅ 图表已成功保存为本地文件: {filename}")
+    print(f"🧹 已清空日志文件: {args.file}")
     return 0
 
 

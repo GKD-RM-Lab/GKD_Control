@@ -131,7 +131,7 @@ namespace Device
             robot_set->gimbalT_1_yaw_set += pkg.mouse_x / 10000.;
             robot_set->gimbalT_1_pitch_set -= pkg.mouse_y / 10000.;
             robot_set->gimbalT_1_pitch_set =
-                std::clamp(robot_set->gimbalT_1_pitch_set, -0.3f, 0.3f); 
+                std::clamp(robot_set->gimbalT_1_pitch_set, -0.2f, 0.275f); 
         }
 
 

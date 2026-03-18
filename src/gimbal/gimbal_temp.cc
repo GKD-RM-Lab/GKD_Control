@@ -32,7 +32,7 @@ void imu_log_init() {
     ::mkdir("../../../../log", 0755);  // ignore EEXIST and other non-fatal errors
     g_imu_log_ofs.open("../../../../log/imu.txt", std::ios::out | std::ios::trunc);
     if (g_imu_log_ofs.is_open()) {
-        g_imu_log_ofs << "# t_s,id,auto_aim_pitch_set_rad,auto_aim_yaw_set_rad,pitch_rad,yaw_rad,"
+        g_imu_log_ofs << "# t_s,id,pitch_set_rad,yaw_set_rad,pitch_rad,yaw_rad,"
                          "pitch_rate_rad_s,yaw_rate_rad_s\n";
         g_imu_log_ofs << std::fixed << std::setprecision(6);
     }
@@ -42,8 +42,8 @@ void imu_log_init() {
 
 void imu_log_write(
     int gimbal_id,
-    float auto_aim_pitch_set_rad,
-    float auto_aim_yaw_set_rad,
+    float pitch_set_rad,
+    float yaw_set_rad,
     float pitch_rad,
     float yaw_rad,
     float pitch_rate_rad_s,
@@ -63,8 +63,8 @@ void imu_log_write(
 
     const double t_s =
         std::chrono::duration_cast<std::chrono::duration<double>>(now - g_imu_log_t0).count();
-    g_imu_log_ofs << t_s << "," << gimbal_id << "," << auto_aim_pitch_set_rad << ","
-                  << auto_aim_yaw_set_rad << "," << pitch_rad << "," << yaw_rad << ","
+    g_imu_log_ofs << t_s << "," << gimbal_id << "," << pitch_set_rad << ","
+                  << yaw_set_rad << "," << pitch_rad << "," << yaw_rad << ","
                   << pitch_rate_rad_s << "," << yaw_rate_rad_s << "\n";
     // Keep data visible even if the process exits unexpectedly during debug.
     g_imu_log_ofs.flush();
@@ -133,8 +133,6 @@ namespace Gimbal
             config.header, [this](const Robot::Auto_aim_control &vc) {
                 // LOG_INFO("socket recive %f %f %d %d\n",vc.yaw_set,vc.pitch_set,vc.fire,config.gimbal_id);
                 receive_auto_aim = std::chrono::steady_clock::now();
-                last_auto_aim_yaw_set.store(vc.yaw_set, std::memory_order_relaxed);
-                last_auto_aim_pitch_set.store(vc.pitch_set, std::memory_order_relaxed);
                 if (robot_set->auto_aim_status) {
                     robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL);
                     robot_set->cv_fire = vc.fire;
@@ -358,6 +356,9 @@ namespace Gimbal
                 // LOG_INFO("yaw set %f, imu yaw %f\n", *yaw_set, imu_yaw.yaw);
                 //LOG_INFO("mode:%d\n", robot_set->mode);
                 // LOG_INFO("%f\n", *pitch_set);
+#ifdef CONFIG_INFANTRY
+                *pitch_set = std::clamp(*pitch_set, -0.2f, 0.275f);
+#endif
                 *pitch_set >> pitch_absolute_pid >> pitch_motor;
                 //LOG_INFO("status::%d\n", robot_set->auto_aim_status);
             }
@@ -397,14 +398,14 @@ namespace Gimbal
         // auto newYawOffSet = yaw_motor.data_.rotor_angle / Hardware::DJIMotor::ECD_8192_TO_RAD;
         // LOG_INFO("Yawoffset:%f\n", newYawOffSet);
         // gimbal sentry follow needs
-        // LOG_INFO("imu.pitch:%f\n", imu_pitch.pitch);
-        //  LOG_INFO("imu.yaw:%f\n", imu_yaw.yaw);
+        // LOG_INFO("imu.pitch:%f | pitch_set:%f\n", imu_pitch.pitch, robot_set->gimbalT_1_pitch_set);        //  LOG_INFO("imu.yaw:%f\n", imu_yaw.yaw);
+        LOG_INFO("imu.yaw:%f | yaw_set:%f\n", imu_yaw.yaw, robot_set->gimbalT_1_yaw_set);
         // LOG_INFO("imu.pitch_rate:%f\n", imu.pitch_rate);
         // LOG_INFO("imu.yaw_rate:%f\n", imu_yaw.yaw_rate);
         imu_log_write(
             config.gimbal_id,
-            last_auto_aim_pitch_set.load(std::memory_order_relaxed),
-            last_auto_aim_yaw_set.load(std::memory_order_relaxed),
+            *pitch_set,
+            *yaw_set,
             imu_pitch.pitch,
             imu_yaw.yaw,
             imu_pitch.pitch_rate,

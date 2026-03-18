@@ -112,66 +112,29 @@ namespace Config
         //     .max_out =      30.0f,
         //     .max_iout =     0.f,
         // },
-        .yaw_absolute_pid_config = {
-            .kp =           8.0f,
-            .ki =           0.062f,
-            .kd =           0.0f,
+
+         .yaw_absolute_pid_config = {
+            .kp =           10.0f, // 8
+            .ki =           0.f,
+            .kd =           10.f,
             .max_out =      60.0f,
             .max_iout =     0.0f,
         },
 
-        // .yaw_absolute_pid_config = {    //yaw 位置环 pid
-        //     .kp =           10.f,
-        //     .ki =           0.0001f,
-        //     .kd =           80.f,
-        //     .max_out =      60.0f,
-        //     .max_iout =     0.0f,
-        // },
-
-
-        //     .yaw_relative_pid_config ={
-        //     .kp =           10.0f,
-        //     .ki =           0.0f,
-        //     .kd =           0.3f,
-        //     .max_out =      10.0f,
-        //     .max_iout =     0.0f,
-        // },
-
-       
-
-
-        		// PID POSITION ABSOLUTE 科学调参ok 3.17
-                // 手调 by dxy 2.28
         // .yaw_absolute_pid_config = {
-        //     .kp =           13.0f,
-        //     .ki =           0.022f,
-        //     .kd =           0.0f,
+        //     .kp =           10.0f, // 8
+        //     .ki =           0.062f,
+        //     .kd =           0.1f,
         //     .max_out =      60.0f,
         //     .max_iout =     0.0f,
         // },
 
-        // PID POSITION ABSOLUTE 科学调参ok 3.17(2026)
-        // .yaw_absolute_pid_config = {    //yaw 位置环 pid
-        //     .kp =           10.376936f,
-        //     .ki =           0.006265f,
-        //     .kd =           0.0f,
-        //     .max_out =      60.0f,
-        //     .max_iout =     0.0f,
-        // },
-                //PID PITCH POSITION
-        // .pitch_absolute_pid_config = {
-        //     .kp =           15.45f,
-        //     .ki =           0.0f,
-        //     .kd =           0.0f,
-        //     .max_out =      10.0f,
-        //     .max_iout =     0.0f,
-        // },
         .pitch_absolute_pid_config = {
-            .kp =           13.45f,
-            .ki =           0.0f,
+            .kp =           20.45f,
+            .ki =           0.15f,
             .kd =           0.0f,
             .max_out =      10.0f,
-            .max_iout =     0.0f,
+            .max_iout =     1.5f,
         },
         .gimbal_motor_dir = 1.0,
         .gimbal_id = 1,
