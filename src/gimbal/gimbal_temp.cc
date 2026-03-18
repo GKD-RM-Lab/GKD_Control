@@ -32,7 +32,8 @@ void imu_log_init() {
     ::mkdir("../../../../log", 0755);  // ignore EEXIST and other non-fatal errors
     g_imu_log_ofs.open("../../../../log/imu.txt", std::ios::out | std::ios::trunc);
     if (g_imu_log_ofs.is_open()) {
-        g_imu_log_ofs << "# t_s,id,pitch_rad,yaw_rad,pitch_rate_rad_s,yaw_rate_rad_s\n";
+        g_imu_log_ofs << "# t_s,id,auto_aim_pitch_set_rad,auto_aim_yaw_set_rad,pitch_rad,yaw_rad,"
+                         "pitch_rate_rad_s,yaw_rate_rad_s\n";
         g_imu_log_ofs << std::fixed << std::setprecision(6);
     }
     g_imu_log_t0 = std::chrono::steady_clock::now();
@@ -41,6 +42,8 @@ void imu_log_init() {
 
 void imu_log_write(
     int gimbal_id,
+    float auto_aim_pitch_set_rad,
+    float auto_aim_yaw_set_rad,
     float pitch_rad,
     float yaw_rad,
     float pitch_rate_rad_s,
@@ -60,8 +63,9 @@ void imu_log_write(
 
     const double t_s =
         std::chrono::duration_cast<std::chrono::duration<double>>(now - g_imu_log_t0).count();
-    g_imu_log_ofs << t_s << "," << gimbal_id << "," << pitch_rad << "," << yaw_rad
-                  << "," << pitch_rate_rad_s << "," << yaw_rate_rad_s << "\n";
+    g_imu_log_ofs << t_s << "," << gimbal_id << "," << auto_aim_pitch_set_rad << ","
+                  << auto_aim_yaw_set_rad << "," << pitch_rad << "," << yaw_rad << ","
+                  << pitch_rate_rad_s << "," << yaw_rate_rad_s << "\n";
     // Keep data visible even if the process exits unexpectedly during debug.
     g_imu_log_ofs.flush();
 }
@@ -129,23 +133,25 @@ namespace Gimbal
             config.header, [this](const Robot::Auto_aim_control &vc) {
                 // LOG_INFO("socket recive %f %f %d %d\n",vc.yaw_set,vc.pitch_set,vc.fire,config.gimbal_id);
                 receive_auto_aim = std::chrono::steady_clock::now();
+                last_auto_aim_yaw_set.store(vc.yaw_set, std::memory_order_relaxed);
+                last_auto_aim_pitch_set.store(vc.pitch_set, std::memory_order_relaxed);
                 if (robot_set->auto_aim_status) {
-                robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL);
-                robot_set->cv_fire = vc.fire;
-                if (vc.fire && ISDEF(CONFIG_SENTRY)) {
-                    robot_set->shoot_open |= config.gimbal_id;
-                }
+                    robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL);
+                    robot_set->cv_fire = vc.fire;
+                    if (vc.fire && ISDEF(CONFIG_SENTRY)) {
+                        robot_set->shoot_open |= config.gimbal_id;
+                    }
 
-                if ((robot_set->shoot_open & (3 - config.gimbal_id)) == 0) {
-                    *another_yaw_set = vc.yaw_set;
-                    *another_pitch_set = vc.pitch_set;
-                }
-		        // LOG_INFO("status:%d\n",robot_set->auto_aim_status);
-                // LOG_INFO("yaw:%f,pitch:%f\n",vc.yaw_set,vc.pitch_set);
-                // if (!ISDEF(CONFIG_SENTRY) && !robot_set->auto_aim_status)
-                //     return;
-                *yaw_set = vc.yaw_set;
-                *pitch_set = vc.pitch_set;
+                    if ((robot_set->shoot_open & (3 - config.gimbal_id)) == 0) {
+                        *another_yaw_set = vc.yaw_set;
+                        *another_pitch_set = vc.pitch_set;
+                    }
+                    // LOG_INFO("status:%d\n",robot_set->auto_aim_status);
+                    // LOG_INFO("yaw:%f,pitch:%f\n",vc.yaw_set,vc.pitch_set);
+                    // if (!ISDEF(CONFIG_SENTRY) && !robot_set->auto_aim_status)
+                    //     return;
+                    *yaw_set = vc.yaw_set;
+                    *pitch_set = vc.pitch_set;
                 }
             });
 
@@ -396,7 +402,13 @@ namespace Gimbal
         // LOG_INFO("imu.pitch_rate:%f\n", imu.pitch_rate);
         // LOG_INFO("imu.yaw_rate:%f\n", imu_yaw.yaw_rate);
         imu_log_write(
-            config.gimbal_id, imu_pitch.pitch, imu_yaw.yaw, imu_pitch.pitch_rate, imu_yaw.yaw_rate);
+            config.gimbal_id,
+            last_auto_aim_pitch_set.load(std::memory_order_relaxed),
+            last_auto_aim_yaw_set.load(std::memory_order_relaxed),
+            imu_pitch.pitch,
+            imu_yaw.yaw,
+            imu_pitch.pitch_rate,
+            imu_yaw.yaw_rate);
         *yaw_rela = yaw_relative;
         fake_yaw_abs = robot_set->gimbal_sentry_yaw - yaw_relative;
     }
