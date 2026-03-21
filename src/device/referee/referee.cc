@@ -299,7 +299,8 @@ namespace Device
                 remain_bullet_num_for_ui);
 
 #ifdef CONFIG_INFANTRY
-            sendLedFrame(robot_set, robot_set->friction_real_state);
+            
+            sendLedFrame(robot_set, robot_set->fric_led_open);
 #endif
     
             

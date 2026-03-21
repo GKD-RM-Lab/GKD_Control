@@ -47,7 +47,7 @@ namespace Power
     constexpr static float refereeFullBuffSet = 60.0f;   // 裁判系统“满功率模式”缓冲目标
     constexpr static float refereeBaseBuffSet = 50.0f;   // 裁判系统“保守模式”缓冲目标
     constexpr static float capFullBuffSet = 250.0f;      // 超级电容“满功率模式”缓冲目标
-    constexpr static float capBaseBuffSet = 50.0f;      // 超级电容“保守模式”缓冲目标
+    constexpr static float capBaseBuffSet = 40.0f;      // 超级电容“保守模式”缓冲目标
     constexpr static float error_powerDistribution_set = 20.0f; // 误差优先权重切换上阈值
     constexpr static float prop_powerDistribution_set = 15.0f;  // 比例优先权重切换下阈值
 

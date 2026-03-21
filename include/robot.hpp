@@ -31,6 +31,7 @@ namespace Robot
         bool friction_open = false;
         bool friction_real_state =
             false;  // friction's real state (motor linear speed < 0.5 ? false : true)
+        bool fric_led_open = false;
         bool cv_fire = false;
         int shoot_open = 0;
 

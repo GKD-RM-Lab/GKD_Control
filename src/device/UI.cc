@@ -8,10 +8,12 @@ RM自定义UI协议       基于RM2020学生串口通信协议V1.1
 
 #include "UI.hpp"
 
+#include <chrono>
 #include <climits>
 #include <cstdarg>
 #include <cstdio>
 #include <string>
+#include <thread>
 
 static unsigned char UI_com[512];
 static int UI_tot = 0;
@@ -688,7 +690,6 @@ void UI_task(Device::Base *base_) {
 Crosshair_Data_Type Crosshair_Data;
 volatile UI_DisplayData_Type UI_Data;
 State_Indicate_Type State_Data;
-
 String_Data state_text_data;
 String_Data fired_text_data;
 Graph_Data shoot_distance_bar, cap_percentage, cap_full_frame, auto_aim_range;
@@ -700,6 +701,68 @@ namespace
 {
     constexpr u32 kCapBarYOffset = 18;
     constexpr u32 kCapFrameWidth = 2;
+    constexpr int kUiPacketGapMs = 30;
+    constexpr int kUiUpdateIntervalMs = 200;
+    constexpr int kUiRetryIntervalMs = 100;
+    constexpr int kUiFullRedrawIntervalMs = 10000;
+
+    bool resolve_client_id(uint16_t robot_id, uint16_t *client_id) {
+        if (client_id == nullptr) {
+            return false;
+        }
+
+        switch (robot_id) {
+            case UI_Data_RobotID_RHero:
+                *client_id = UI_Data_CilentID_RHero;
+                return true;
+            case UI_Data_RobotID_REngineer:
+                *client_id = UI_Data_CilentID_REngineer;
+                return true;
+            case UI_Data_RobotID_RStandard1:
+                *client_id = UI_Data_CilentID_RStandard1;
+                return true;
+            case UI_Data_RobotID_RStandard2:
+                *client_id = UI_Data_CilentID_RStandard2;
+                return true;
+            case UI_Data_RobotID_RStandard3:
+                *client_id = UI_Data_CilentID_RStandard3;
+                return true;
+            case UI_Data_RobotID_RAerial:
+                *client_id = UI_Data_CilentID_RAerial;
+                return true;
+            case UI_Data_RobotID_BHero:
+                *client_id = UI_Data_CilentID_BHero;
+                return true;
+            case UI_Data_RobotID_BEngineer:
+                *client_id = UI_Data_CilentID_BEngineer;
+                return true;
+            case UI_Data_RobotID_BStandard1:
+                *client_id = UI_Data_CilentID_BStandard1;
+                return true;
+            case UI_Data_RobotID_BStandard2:
+                *client_id = UI_Data_CilentID_BStandard2;
+                return true;
+            case UI_Data_RobotID_BStandard3:
+                *client_id = UI_Data_CilentID_BStandard3;
+                return true;
+            case UI_Data_RobotID_BAerial:
+                *client_id = UI_Data_CilentID_BAerial;
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool update_ui_target_id(uint16_t robot_id) {
+        uint16_t client_id = 0;
+        if (!resolve_client_id(robot_id, &client_id)) {
+            return false;
+        }
+
+        Robot_ID_Read = robot_id;
+        Cilent_ID_Read = client_id;
+        return true;
+    }
 
     void draw_cap_energy_graph(
         Graph_Data *cap_bar,
@@ -737,66 +800,37 @@ namespace
             cap_bar_start_x + State_Data.cap_display_length,
             cap_bar_center_y + cap_frame_half_height);
     }
-}  // namespace
 
-void custom_ui_task(Device::Base *base_, uint8_t &robot_id_) {
-    Robot_ID_Read = robot_id_;
-    Cilent_ID_Read = 0x100 + robot_id_;
-    custom_UI_init(base_);
-    sync_parameter();
-    draw_cap_energy_graph(&cap_percentage, &cap_full_frame, UI_Graph_ADD, UI_Graph_ADD);
-    UI_ReFresh(base_, 2, cap_percentage, cap_full_frame);
-    osDelay(100);
-    state_str(cap_text, State_Data.cap_percent, State_Data.spin_state, State_Data.fric_state);
+    void draw_auto_aim_graph(Graph_Data *auto_aim_graph, u32 operate_type) {
+        u32 color = UI_Color_Cyan;
+        if (UI_Data.auto_aim_state == AUTOAIM_LOST) {
+            color = UI_Color_Green;
+        } else if (UI_Data.auto_aim_state == AUTOAIM_LOCKED) {
+            color = UI_Color_Purplish_red;
+        } else if (UI_Data.auto_aim_state == AUTOAIM_OFFLINE) {
+            color = UI_Color_Black;
+        }
 
-    String_Draw(
-        &state_text_data,
-        "sta",
-        UI_Graph_ADD,
-        1,
-        State_Data.cap_text_color,
-        State_Data.cap_text_size,
-        21,
-        2,
-        State_Data.cap_text_pos[0],
-        State_Data.cap_text_pos[1],
-        cap_text);
-    String_ReFresh(base_, state_text_data);
-    osDelay(150);
+        Rectangle_Draw(
+            auto_aim_graph,
+            "aui",
+            operate_type,
+            0,
+            color,
+            3,
+            Crosshair_Data.center[0] - (Crosshair_Data.cross_width + 50 / 2),
+            300,
+            Crosshair_Data.center[0] + (Crosshair_Data.cross_width + 50 / 2),
+            800);
+    }
 
-    std::snprintf(fired_text, sizeof(fired_text), "SHOT:%05d", UI_Data.fired_bullet_num);
-    String_Draw(&fired_text_data, "sht", UI_Graph_ADD, 1, UI_Color_Yellow, 25, 10, 2, 120, 800, fired_text);
-    String_ReFresh(base_, fired_text_data);
-    osDelay(100);
-
-    // 瞄准框
-    Rectangle_Draw(&auto_aim_range, "aui", UI_Graph_ADD, 0, UI_Color_Cyan, 3, 700, 300, 1300, 800);
-    UI_ReFresh(base_, 1, auto_aim_range);
-    osDelay(100);
-
-    while (1) {
-        Robot_ID_Read = robot_id_;
-        Cilent_ID_Read = 0x100 + robot_id_;
-        // LOG_INFO("robot_id_ %x client id %x\n", Robot_ID_Read, Cilent_ID_Read);
-        sync_parameter();
-        update_dynamic_paramater(base_);
-
-        // 间隔一定时间重新初始化ui
-        osDelay(100);
-        if (UI_MODE == UI_HERO)
-            draw_crosshair_hero(base_);
-        else if (UI_MODE == UI_INFANTRY)
-            draw_crosshair_infantry(base_);
-        osDelay(100);
-        draw_cap_energy_graph(&cap_percentage, &cap_full_frame, UI_Graph_Change, UI_Graph_Change);
-        UI_ReFresh(base_, 2, cap_percentage, cap_full_frame);
-        osDelay(100);
+    void build_state_text(u32 operate_type) {
         state_str(cap_text, State_Data.cap_percent, State_Data.spin_state, State_Data.fric_state);
-
+        cap_text[21] = '\0';
         String_Draw(
             &state_text_data,
             "sta",
-            UI_Graph_Change,
+            operate_type,
             1,
             State_Data.cap_text_color,
             State_Data.cap_text_size,
@@ -805,14 +839,14 @@ void custom_ui_task(Device::Base *base_, uint8_t &robot_id_) {
             State_Data.cap_text_pos[0],
             State_Data.cap_text_pos[1],
             cap_text);
-        String_ReFresh(base_, state_text_data);
-        osDelay(150);
+    }
 
+    void build_fired_text(u32 operate_type) {
         std::snprintf(fired_text, sizeof(fired_text), "SHOT:%05d", UI_Data.fired_bullet_num);
         String_Draw(
             &fired_text_data,
             "sht",
-            (count % 50 == 0) ? UI_Graph_ADD : UI_Graph_Change,
+            operate_type,
             1,
             UI_Color_Yellow,
             25,
@@ -821,24 +855,73 @@ void custom_ui_task(Device::Base *base_, uint8_t &robot_id_) {
             120,
             800,
             fired_text);
+    }
+
+    void draw_static_ui(Device::Base *base_) {
+        if (UI_MODE == UI_HERO) {
+            draw_crosshair_hero(base_);
+        } else if (UI_MODE == UI_INFANTRY) {
+            draw_crosshair_infantry(base_);
+        }
+    }
+
+    void refresh_dynamic_ui(Device::Base *base_, u32 graph_operate, u32 string_operate) {
+        sync_parameter();
+
+        draw_cap_energy_graph(&cap_percentage, &cap_full_frame, graph_operate, graph_operate);
+        UI_ReFresh(base_, 2, cap_percentage, cap_full_frame);
+        osDelay(kUiPacketGapMs);
+
+        build_state_text(string_operate);
+        String_ReFresh(base_, state_text_data);
+        osDelay(kUiPacketGapMs);
+
+        build_fired_text(string_operate);
         String_ReFresh(base_, fired_text_data);
-        osDelay(100);
-        count++;
+        osDelay(kUiPacketGapMs);
 
-        // 瞄准框
-        Rectangle_Draw(
-            &auto_aim_range, "aui", UI_Graph_ADD, 0, UI_Color_Cyan, 3, 700, 300, 1300, 800);
+        draw_auto_aim_graph(&auto_aim_range, graph_operate);
         UI_ReFresh(base_, 1, auto_aim_range);
-        osDelay(100);
-        // //测试刷新用
-        // UI_Data.Super_cap_percent+=2;
-        // if(UI_Data.Super_cap_percent>=100) UI_Data.Super_cap_percent=0;
-        // if(UI_Data.Super_cap_percent>=50) UI_Data.spin_state = 1;
-        // else UI_Data.spin_state = 0;
-        // if(UI_Data.Super_cap_percent>=70) UI_Data.fric_state = 1;
-        // else UI_Data.fric_state = 0;
+        osDelay(kUiPacketGapMs);
+    }
 
-        osDelay(1);  // 刷新率=10Hz
+    void full_redraw_ui(Device::Base *base_) {
+        UI_clear(base_);
+        ui_parameter_init();
+        draw_static_ui(base_);
+        osDelay(kUiPacketGapMs);
+        refresh_dynamic_ui(base_, UI_Graph_ADD, UI_Graph_ADD);
+    }
+}  // namespace
+
+void custom_ui_task(Device::Base *base_, uint8_t &robot_id_) {
+    uint16_t last_robot_id = 0;
+    auto last_full_redraw_time =
+        std::chrono::steady_clock::now() - std::chrono::milliseconds(kUiFullRedrawIntervalMs);
+
+    while (1) {
+        const uint16_t current_robot_id = robot_id_;
+        if (!base_->referee_data_is_online_ || !update_ui_target_id(current_robot_id)) {
+            last_robot_id = 0;
+            osDelay(kUiRetryIntervalMs);
+            continue;
+        }
+
+        const auto now = std::chrono::steady_clock::now();
+        const bool robot_id_changed = current_robot_id != last_robot_id;
+        const bool redraw_due =
+            now - last_full_redraw_time >= std::chrono::milliseconds(kUiFullRedrawIntervalMs);
+
+        if (robot_id_changed || redraw_due) {
+            full_redraw_ui(base_);
+            last_full_redraw_time = std::chrono::steady_clock::now();
+        } else {
+            refresh_dynamic_ui(base_, UI_Graph_Change, UI_Graph_Change);
+        }
+
+        last_robot_id = current_robot_id;
+        count++;
+        osDelay(kUiUpdateIntervalMs);
     }
 }
 
@@ -1053,78 +1136,7 @@ void UI_init_draw(Device::Base *base_) {
 
 /*刷新动态参数*/
 void update_dynamic_paramater(Device::Base *base_) {
-    // 测距部分的刷新
-    // Line_Draw(
-    //    &shoot_distance_bar,
-    //    "dst",
-    //    UI_Graph_Change,
-    //    1,
-    //    Crosshair_Data.shoot_bar_color,
-    //    Crosshair_Data.dist_display_width,
-    //    Crosshair_Data.center[0] + Crosshair_Data.dist_start_point[0],
-    //    Crosshair_Data.center[1] + Crosshair_Data.dist_start_point[1] -
-    //        Crosshair_Data.dist_display_width,
-    //    Crosshair_Data.center[0] + Crosshair_Data.dist_start_point[0] +
-    //        ((Crosshair_Data.dist_display_length * Crosshair_Data.shoot_dist_percent) / 100),
-    //    Crosshair_Data.center[1] + Crosshair_Data.dist_start_point[1] -
-    //        Crosshair_Data.dist_display_width);
-
-    // 超电的刷新
-    draw_cap_energy_graph(&cap_percentage, &cap_full_frame, UI_Graph_Change, UI_Graph_Change);
-    // 状态的刷新
-    // state_str(cap_text, State_Data.cap_percent, State_Data.spin_state, State_Data.fric_state);
-    // String_Draw(
-    //    &state_text_data,
-    //    "sta",
-    //    UI_Graph_Change,
-    //    1,
-    //    State_Data.cap_text_color,
-    //    State_Data.cap_text_size,
-    //    21,
-    //    2,
-    //    State_Data.cap_text_pos[0],
-    //    State_Data.cap_text_pos[1],
-    //    cap_text);
-
-    // 自瞄框的刷新
-    if (UI_Data.auto_aim_state == AUTOAIM_LOST) {
-        Rectangle_Draw(
-            &auto_aim_range,
-            "aui",
-            UI_Graph_Change,
-            0,
-            UI_Color_Green,
-            3,
-            Crosshair_Data.center[0] - (Crosshair_Data.cross_width + 50 / 2),
-            300,
-            Crosshair_Data.center[0] + (Crosshair_Data.cross_width + 50 / 2),
-            800);
-    } else if (UI_Data.auto_aim_state == AUTOAIM_LOCKED) {
-        Rectangle_Draw(
-            &auto_aim_range,
-            "aui",
-            UI_Graph_Change,
-            0,
-            UI_Color_Purplish_red,
-            3,
-            Crosshair_Data.center[0] - (Crosshair_Data.cross_width + 50 / 2),
-            300,
-            Crosshair_Data.center[0] + (Crosshair_Data.cross_width + 50 / 2),
-            800);
-    } else if (UI_Data.auto_aim_state == AUTOAIM_OFFLINE) {
-        Rectangle_Draw(
-            &auto_aim_range, "aui", UI_Graph_Change, 0, UI_Color_Black, 3, 700, 300, 1300, 800);
-    }
-
-    // 应用刷新(英雄显示测距和准星，步兵准星没做)
-    if (UI_MODE == UI_HERO)
-        UI_ReFresh(base_, 3, shoot_distance_bar, cap_percentage, cap_full_frame);
-    else if (UI_MODE == UI_INFANTRY)
-        UI_ReFresh(base_, 2, cap_percentage, cap_full_frame);
-    osDelay(100);
-    String_ReFresh(base_, state_text_data);
-    osDelay(100);
-    UI_ReFresh(base_, 1, auto_aim_range);
+    refresh_dynamic_ui(base_, UI_Graph_Change, UI_Graph_Change);
 }
 
 /*刷新动态参数*/
@@ -1167,10 +1179,7 @@ void UI_clear(Device::Base *base_) {
 void custom_UI_init(Device::Base *base_) {
     UI_clear(base_);
     ui_parameter_init();
-    if (UI_MODE == UI_HERO)
-        draw_crosshair_hero(base_);
-    else if (UI_MODE == UI_INFANTRY)
-        draw_crosshair_infantry(base_);
+    draw_static_ui(base_);
 }
 
 void int_to_str(char *to_str, int number) {
@@ -1258,6 +1267,7 @@ void state_str(char *to_str, int cap_percent, int spin_state, int fric_state) {
     to_str[18] = ((cap_percent / 100) % 10) + 48;
     to_str[19] = ((cap_percent / 10) % 10) + 48;
     to_str[20] = (cap_percent % 10) + 48;
+    to_str[21] = '\0';
 }
 
 // 同步UI_DisplayData_Type的状态到UI控制结构体
@@ -1274,17 +1284,12 @@ void sync_parameter() {
 // 从裁判系统读取机器人ID
 
 void Read_Robot_ID(Device::Base *base_) {
-    switch (Robot_ID_Read) {
-        case UI_Data_RobotID_BHero: Cilent_ID_Read = UI_Data_CilentID_BHero; break;
-
-        case UI_Data_RobotID_RHero: Cilent_ID_Read = UI_Data_CilentID_RHero; break;
-    }
+    (void)base_;
+    update_ui_target_id(Robot_ID_Read);
     // usart1_printf("robotid:%x, cilentid:%x\n", Robot_ID_Read, Cilent_ID_Read);
 }
 
 void ui_parameter_init() {
-    UI_Data.distance = 0.0;
-
     /*准星参数初始化*/
     Crosshair_Data.center[0] = CROSS_CENTER_X;  // 中心X
     Crosshair_Data.center[1] = CROSS_CENTER_Y;  // 中心Y
@@ -1339,19 +1344,4 @@ void ui_parameter_init() {
     State_Data.cap_text_size = 30;                // 字体大小
     State_Data.cap_text_color = UI_Color_Cyan;    // 文字颜色
     State_Data.cap_bar_color = UI_Color_Cyan;     // 百分条颜色
-
-    State_Data.cap_percent = 100;
-
-    State_Data.fric_state = 0;  // 摩擦轮开关状态
-    State_Data.spin_state = 0;  // 小陀螺开关状态
-
-    /*动态参数*/
-    UI_Data.distance = 0.0;            // 距离
-    UI_Data.shoot_speed = 0.0;         // 弹速
-    UI_Data.Super_cap_percent = 35.0;  // 超电百分比
-    UI_Data.spin_state = 0;            // 自旋状态
-    UI_Data.fric_state = 0;            // 摩擦轮状态
-    UI_Data.purchased_bullet_num = 0;
-    UI_Data.remain_bullet_num = 0;
-    UI_Data.fired_bullet_num = 0;
 }

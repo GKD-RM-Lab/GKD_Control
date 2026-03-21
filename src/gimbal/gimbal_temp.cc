@@ -399,7 +399,7 @@ namespace Gimbal
         // LOG_INFO("Yawoffset:%f\n", newYawOffSet);
         // gimbal sentry follow needs
         // LOG_INFO("imu.pitch:%f | pitch_set:%f\n", imu_pitch.pitch, robot_set->gimbalT_1_pitch_set);        //  LOG_INFO("imu.yaw:%f\n", imu_yaw.yaw);
-        LOG_INFO("imu.yaw:%f | yaw_set:%f\n", imu_yaw.yaw, robot_set->gimbalT_1_yaw_set);
+        // LOG_INFO("imu.yaw:%f | yaw_set:%f\n", imu_yaw.yaw, robot_set->gimbalT_1_yaw_set);
         // LOG_INFO("imu.pitch_rate:%f\n", imu.pitch_rate);
         // LOG_INFO("imu.yaw_rate:%f\n", imu_yaw.yaw_rate);
         imu_log_write(
