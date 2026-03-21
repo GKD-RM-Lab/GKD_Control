@@ -1,7 +1,7 @@
 #include "device/rc_controller.hpp"
 
 #include <chrono>
-
+#include <cmath>
 #include "io.hpp"
 #include "serial_interface.hpp"
 #include "types.hpp"
@@ -26,11 +26,14 @@ namespace Device
     }
 
     void Rc_Controller::unpack(const Types::ReceivePacket_RC_CTRL &pkg) {
+        static constexpr float MAX_SPIN_SPEED = 1.6f;
+        static constexpr float MIN_SPIN_SPEED = 1.f;
+        static constexpr float spin_acc = 6.f;
         static bool wz_key_pressed_last = false;
         static bool friction_key_pressed_last = false;
         static bool spin_enabled = false;
         static const auto runtime_begin = std::chrono::steady_clock::now();
-        const auto elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>
+        const auto elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>
             (std::chrono::steady_clock::now() - runtime_begin) .count();
        
         if (pkg.s1 == S1_DOWN && pkg.s2 == S2_DOWN && pkg.ch4 == ROLL_UP_MAX) {
@@ -90,8 +93,7 @@ namespace Device
                 wz_key_pressed_last = false;
             }
             if (spin_enabled) {
-                robot_set->wz_set =
-                    1.2f + static_cast<float>(elapsed_seconds % 4LL) / 10.0f;
+                robot_set->wz_set = std::sin(elapsed_seconds / 1000.0f * spin_acc) * (MAX_SPIN_SPEED - MIN_SPIN_SPEED) / 2 + (MAX_SPIN_SPEED + MIN_SPIN_SPEED) / 2;
             } else {
                 robot_set->wz_set = 0.0f;
             }
@@ -170,8 +172,7 @@ namespace Device
             }
 
             if (pkg.s1 == S1_UP)
-                 robot_set->wz_set =
-                    1.2f + static_cast<float>(elapsed_seconds % 4LL) / 10.0f;
+                robot_set->wz_set = std::sin(elapsed_seconds / 1000.0f * spin_acc) * (MAX_SPIN_SPEED - MIN_SPIN_SPEED) / 2 + (MAX_SPIN_SPEED + MIN_SPIN_SPEED) / 2;
             else
                 robot_set->wz_set = 0;
 
