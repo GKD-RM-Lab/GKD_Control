@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 #include "dji_motor.hpp"
 #include "pid_controller.hpp"
@@ -21,6 +22,7 @@ namespace Gimbal
         int gimbal_id;
         const int ControlTime{};
         const fp32 YawOffSet{};
+        uint8_t yaw_command_header = 0xA0;
         Shoot::ShootConfig shoot_config;
         uint8_t header;
         std::string auto_aim_ip;

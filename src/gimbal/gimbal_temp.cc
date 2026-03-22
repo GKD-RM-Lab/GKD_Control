@@ -78,7 +78,13 @@ namespace Gimbal
           imu_yaw(config.imu_serial_port),
           imu_pitch(config.imu_serial_port_pitch.empty() ? config.imu_serial_port
                                                         : config.imu_serial_port_pitch),
+#ifdef CONFIG_INFANTRY
+          yaw_motor(config.yaw_motor_config.can_name_,
+                    config.yaw_motor_config.id_,
+                    config.yaw_command_header),
+#else
           yaw_motor(config.yaw_motor_config),
+#endif
           pitch_motor(config.pitch_motor_config),
           yaw_set(nullptr),
           another_yaw_set(nullptr),
@@ -390,8 +396,13 @@ namespace Gimbal
             imu_yaw.pitch_rate = imu_pitch.pitch_rate;
             imu_yaw.roll_rate = imu_pitch.roll_rate;
         }
+#ifdef CONFIG_INFANTRY
+        constexpr float kYawEcdToRad = Device::M9025::ECD_65535_TO_RAD;
+#else
+        constexpr float kYawEcdToRad = Hardware::DJIMotor::ECD_8192_TO_RAD;
+#endif
         yaw_relative = UserLib::rad_format(
-            yaw_motor.data_.rotor_angle - Hardware::DJIMotor::ECD_8192_TO_RAD * config.YawOffSet);
+            yaw_motor.data_.rotor_angle - kYawEcdToRad * config.YawOffSet);
         yaw_gyro = (std::cos(imu_pitch.pitch) * imu_yaw.yaw_rate -
                     std::sin(imu_pitch.pitch) * imu_yaw.roll_rate);
         pitch_gyro = imu_pitch.pitch_rate;

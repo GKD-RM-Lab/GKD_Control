@@ -57,7 +57,7 @@ namespace Config
         .imu_serial_port = "/dev/IMU_CH10X",
         .imu_serial_port_pitch = "/dev/IMU_HERO",
 
-        .yaw_motor_config = Hardware::DJIMotorConfig(6020, "can0", 1),
+        .yaw_motor_config = Hardware::DJIMotorConfig(9025, "can0", 1),
         .pitch_motor_config = Hardware::DJIMotorConfig(6020, "can0", 2),
         // .yaw_rate_pid_config = {        // YAW 速度环PID
         //     .kp =           25000.05045f,
@@ -140,6 +140,7 @@ namespace Config
         .gimbal_id = 1,
         .ControlTime = 1,
         .YawOffSet = 4207,
+        .yaw_command_header = 0xA1,
         .shoot_config = {
             .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 1, 0.075},
             .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 2, 0.075},

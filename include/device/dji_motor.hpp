@@ -24,6 +24,7 @@ namespace Hardware {
         M2006 = 2006,
         M3508 = 3508,
         M6020 = 6020,
+        M9025 = 9025,
         INVALID = 0
     };
 
@@ -45,6 +46,9 @@ namespace Hardware {
                     break;
                     case 6020:
                         type_ = DJIMotorType::M6020;
+                    break;
+                    case 9025:
+                        type_ = DJIMotorType::M9025;
                     break;
                     default:
                         throw std::invalid_argument("Motor Config Error: Invalid motor type");

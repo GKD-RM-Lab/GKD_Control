@@ -18,10 +18,15 @@ CPPFLAGS += -I$(WORK_DIR)/include
 CPPFLAGS += -I$(WORK_DIR)/include/gimbal
 CPPFLAGS += -I$(WORK_DIR)/include/configs
 CPPFLAGS += -I$(WORK_DIR)/include/chassis
+CPPFLAGS += -I$(WORK_DIR)/include/control
 CPPFLAGS += -I$(WORK_DIR)/include/device
 CPPFLAGS += -I$(WORK_DIR)/include/utils
 CPPFLAGS += -I$(WORK_DIR)/include/device/referee
+CPPFLAGS += -I$(WORK_DIR)/include/gimbal
+CPPFLAGS += -I$(WORK_DIR)/include/io
 CPPFLAGS += -I$(WORK_DIR)/include/logger
+CPPFLAGS += -I$(WORK_DIR)/include/robot_controller
+CPPFLAGS += -I$(WORK_DIR)/include/shoot
 
 # NOTE: turn on debug here
 CPPFLAGS += -D__DEBUG__

@@ -48,6 +48,11 @@ namespace Hardware {
                 can_info.can_id_ = DJIMotorCanID::ID_NULL;
                 motor_id_ = 0;
             }
+        } else if(type == DJIMotorType::M9025) {
+            motor_name_ = "{M9025#" + can_name + "#" + std::to_string(motor_id) + "}";
+            LOG_ERR("Motor error[%s]: use Device::M9025 for M9025 motors\n", motor_name_.c_str());
+            can_info.can_id_ = DJIMotorCanID::ID_NULL;
+            motor_id_ = 0;
         }
     }
 

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "device/M9025.hpp"
 #include "device/imu.hpp"
 #include "dji_motor.hpp"
 #include "gimbal/gimbal_config.hpp"
@@ -10,6 +11,11 @@
 
 namespace Gimbal
 {
+#ifdef CONFIG_INFANTRY
+    using GimbalYawMotor = Device::M9025;
+#else
+    using GimbalYawMotor = Hardware::DJIMotor;
+#endif
 
     class GimbalT
     {
@@ -41,7 +47,7 @@ namespace Gimbal
         Device::IMU imu_yaw;
         Device::IMU imu_pitch;
 
-        Hardware::DJIMotor yaw_motor;
+        GimbalYawMotor yaw_motor;
         Hardware::DJIMotor pitch_motor;
 
         ControllerList yaw_relative_pid;
