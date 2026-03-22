@@ -311,8 +311,8 @@ namespace Shoot
     }
 
     bool Shoot::isFrictionOK() {
-        return std::abs(left_friction.data_.output_linear_velocity) > 1.5 &&
-               std::abs(right_friction.data_.output_linear_velocity) > 1.5;
+        return std::abs(left_friction.data_.output_linear_velocity) > 1.7 &&
+               std::abs(right_friction.data_.output_linear_velocity) > 1.7;
     }
 
 }  // namespace Shoot

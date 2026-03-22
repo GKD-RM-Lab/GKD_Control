@@ -585,16 +585,23 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                 const bool paramInRange =
                     k1Raw >= RLS_K1_MIN && k1Raw <= RLS_K1_MAX &&
                     k2Raw >= RLS_K2_MIN && k2Raw <= RLS_K2_MAX;
-                if (paramFinite && paramInRange) {
+                const bool ratioTooLarge =
+                    paramFinite && k2Raw > 0.0f && (k1Raw / k2Raw) > RLS_K1_K2_RATIO_MAX;
+                if (paramFinite && paramInRange && !ratioTooLarge) {
                     k1 = k1Raw;
                     k2 = k2Raw;
                 } else {
-                    const bool prevHealthy =
-                        std::isfinite(prevK1) && std::isfinite(prevK2) &&
-                        prevK1 > RLS_K1_MIN && prevK1 <= RLS_K1_MAX &&
-                        prevK2 > RLS_K2_MIN && prevK2 <= RLS_K2_MAX;
-                    k1 = prevHealthy ? prevK1 : std::clamp(k1Default, RLS_K1_MIN, RLS_K1_MAX);
-                    k2 = prevHealthy ? prevK2 : std::clamp(k2Default, RLS_K2_MIN, RLS_K2_MAX);
+                    if (ratioTooLarge) {
+                        k1 = std::clamp(k1Default, RLS_K1_MIN, RLS_K1_MAX);
+                        k2 = std::clamp(k2Default, RLS_K2_MIN, RLS_K2_MAX);
+                    } else {
+                        const bool prevHealthy =
+                            std::isfinite(prevK1) && std::isfinite(prevK2) &&
+                            prevK1 > RLS_K1_MIN && prevK1 <= RLS_K1_MAX &&
+                            prevK2 > RLS_K2_MIN && prevK2 <= RLS_K2_MAX;
+                        k1 = prevHealthy ? prevK1 : std::clamp(k1Default, RLS_K1_MIN, RLS_K1_MAX);
+                        k2 = prevHealthy ? prevK2 : std::clamp(k2Default, RLS_K2_MIN, RLS_K2_MAX);
+                    }
 
                     rls.reset();
                     float initParams[2] = { k1, k2 };

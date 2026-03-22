@@ -139,8 +139,8 @@ namespace Config
         .gimbal_motor_dir = 1.0,
         .gimbal_id = 1,
         .ControlTime = 1,
-        .YawOffSet = 4207,
         .yaw_command_header = 0xA1,
+        .YawOffSet = 6232,
         .shoot_config = {
             .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 1, 0.075},
             .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 2, 0.075},
@@ -263,7 +263,7 @@ namespace Config
 
     constexpr fp32 FRICTION_MAX_SPEED = 2.5f;
     constexpr fp32 FRICTION_ADD_SPEED = 1.0f;
-constexpr fp32 CONTINUE_TRIGGER_SPEED = 6.f;
+    constexpr fp32 CONTINUE_TRIGGER_SPEED = 6.f;
 
     constexpr uint32_t CHASSIS_CONTROL_TIME = 2;
     constexpr uint32_t GIMBAL_CONTROL_TIME = 1;
