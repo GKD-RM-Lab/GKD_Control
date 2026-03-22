@@ -187,6 +187,15 @@ namespace Gimbal
     void GimbalT::init_task() {
         static int delta = 0;
         while ((imu_yaw.offline() && imu_pitch.offline()) || yaw_motor.offline() || pitch_motor.offline()) {
+#ifdef CONFIG_INFANTRY
+            static auto last_yaw_probe = std::chrono::steady_clock::now() - std::chrono::milliseconds(100);
+            const auto now = std::chrono::steady_clock::now();
+            if (yaw_motor.offline() && now - last_yaw_probe >= std::chrono::milliseconds(50)) {
+                yaw_motor.run();
+                yaw_motor.request_status_2();
+                last_yaw_probe = now;
+            }
+#endif
             UserLib::sleep_ms(Config::GIMBAL_CONTROL_TIME);
             LOG_INFO(
                 "status: imu_yaw:%s | imu_pitch:%s | yaw:%s | pitch:%s\n",
@@ -202,36 +211,18 @@ namespace Gimbal
        
        
         while (robot_set->inited != Types::Init_status::INIT_FINISH) {
-        // while(1) {
              const auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
             (std::chrono::steady_clock::now() - runtime_begin) .count();
             update_data();
             if (config.gimbal_id == 2) {
                 robot_set->inited |= 1 << 1;
             }
-            // delta++;
-            //  if (delta > 10000)
-                // exit(-1);
-
-            // if ( elapsed_milliseconds % 4000 < 2000 ){
-            //     -1.f >> yaw_absolute_pid >> yaw_motor;
-            // } else if(  elapsed_milliseconds % 4000 > 2000){
-            //     -1.8f >> yaw_absolute_pid >> yaw_motor;
-            // }
-
-            // if ( elapsed_milliseconds % 4000 < 2000 ){
-            //     -0.2f >> yaw_motor;
-            // } else if(  elapsed_milliseconds % 4000 > 2000){
-            //     0.2f >> yaw_motor;
-            // }
-            // 0.0f >> yaw_motor;
-
 
             // -1.f >> yaw_relative_pid >> yaw_motor;
 
-            // 1.f >> yaw_motor;
-            0.f >> yaw_relative_pid >> yaw_motor;
-            0.f >> pitch_absolute_pid >> pitch_motor;
+            0.f >> yaw_motor;
+            // 0.f >> yaw_relative_pid >> yaw_motor;
+            // 0.f >> pitch_absolute_pid >> pitch_motor;
             
             // 速度环 阶跃
             // int max_current = 5000;

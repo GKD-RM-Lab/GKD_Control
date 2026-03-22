@@ -35,6 +35,8 @@ namespace Device
         void set(float x) override;
         void unpack(const can_frame& frame);
         void enable();
+        void run();
+        void request_status_2();
 
         const int id = 0;
         const std::string can_name;
@@ -43,5 +45,8 @@ namespace Device
         Message motor_measure;
         Data data_{};
         int16_t give_current = 0;
+
+    private:
+        void send_command(uint8_t command, int16_t value = 0);
     };
 }

@@ -57,7 +57,7 @@ namespace Config
         .imu_serial_port = "/dev/IMU_CH10X",
         .imu_serial_port_pitch = "/dev/IMU_HERO",
 
-        .yaw_motor_config = Hardware::DJIMotorConfig(9025, "can0", 1),
+        .yaw_motor_config = Hardware::DJIMotorConfig(9025, "can0",1),
         .pitch_motor_config = Hardware::DJIMotorConfig(6020, "can0", 2),
         // .yaw_rate_pid_config = {        // YAW 速度环PID
         //     .kp =           25000.05045f,
@@ -66,12 +66,12 @@ namespace Config
         //     .max_out =      30000.0f,
         //     .max_iout =     5000.0f,
         // },
-        .yaw_rate_pid_config = {
-            .kp =           16668.f,
-            .ki =           234.f,
-            .kd =           200.f,
-            .max_out =      30000.0f,
-            .max_iout =     15000.0f,
+       .yaw_rate_pid_config = {
+                .kp =           5000.f,
+                .ki =           0.0f,
+                .kd =           0.f,
+                .max_out =      20000.0f,
+                .max_iout =     5000.0f,
         },
                 //PITCH SPEED PID 科学调参OK 3.17
         // .pitch_rate_pid_config = {
@@ -88,46 +88,21 @@ namespace Config
             .max_out =      30000.0f,
             .max_iout =     5000.0f,
         },
-				// PID POSITION RELATIVE
-        // .yaw_relative_pid_config ={      s
-        //     .kp =           6.0f,
-        //     .ki =           0.f,
-        //     .kd =           30.f,
-        //     .max_out =      10.0f,
-        //     .max_iout =     10.0f,
-        // },
-         .yaw_relative_pid_config ={
-            .kp =           10.0f,
-            .ki =           0.0f,
-            .kd =           0.3f,
-            .max_out =      10.0f,
-            .max_iout =     0.0f,
-        },
-    
-         // PID POSITION ABSOLUTE 
-        // .yaw_absolute_pid_config = {    //yaw 位置环 pid
-        //     .kp =           4.f,
-        //     .ki =           0.0f,
-        //     .kd =           10.f,
-        //     .max_out =      30.0f,
-        //     .max_iout =     0.f,
-        // },
+            .yaw_relative_pid_config ={
+                .kp =           8.0f,
+                .ki =           0.0f,
+                .kd =           0.3f,
+                .max_out =      10.0f,
+                .max_iout =     0.0f,
+            },
+            .yaw_absolute_pid_config = {
+                .kp =           12.0f,
+                .ki =           0.0f,
+                .kd =           0.3f,
+                .max_out =      10.0f,
+                .max_iout =     0.0f,
+            },
 
-         .yaw_absolute_pid_config = {
-            .kp =           10.0f, // 8
-            .ki =           0.f,
-            .kd =           10.f,
-            .max_out =      60.0f,
-            .max_iout =     0.0f,
-        },
-
-        // .yaw_absolute_pid_config = {
-        //     .kp =           10.0f, // 8
-        //     .ki =           0.062f,
-        //     .kd =           0.1f,
-        //     .max_out =      60.0f,
-        //     .max_iout =     0.0f,
-        // },
 
         .pitch_absolute_pid_config = {
             .kp =           20.45f,
@@ -139,8 +114,8 @@ namespace Config
         .gimbal_motor_dir = 1.0,
         .gimbal_id = 1,
         .ControlTime = 1,
-        .yaw_command_header = 0xA1,
         .YawOffSet = 6232,
+        .yaw_command_header = 0xA1,
         .shoot_config = {
             .left_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 1, 0.075},
             .right_friction_motor_config = Hardware::DJIMotorConfig{3508, "can0", 2, 0.075},
