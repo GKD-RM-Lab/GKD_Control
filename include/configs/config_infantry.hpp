@@ -19,7 +19,7 @@ namespace Config
 
     const std::vector<std::tuple<std::string, int, int>> SerialInitList = {
         { "/dev/IMU_HERO", 115200, 2000 },
-        { "/dev/IMU_CH10X", 921600, 2000 },
+        // { "/dev/IMU_CH10X", 921600, 2000 },
         { "/dev/LED", 115200, 2000 }
     };
 
@@ -54,55 +54,53 @@ namespace Config
 
     const Gimbal::GimbalConfig gimbal_config = {
         // Use CH10X for yaw and HERO for pitch.
-        .imu_serial_port = "/dev/IMU_CH10X",
+        // .imu_serial_port = "/dev/IMU_CH10X",
+        .imu_serial_port = "/dev/IMU_HERO",
         .imu_serial_port_pitch = "/dev/IMU_HERO",
 
         .yaw_motor_config = Hardware::DJIMotorConfig(9025, "can0",1),
         .pitch_motor_config = Hardware::DJIMotorConfig(6020, "can0", 2),
-        // .yaw_rate_pid_config = {        // YAW 速度环PID
-        //     .kp =           25000.05045f,
-        //     .ki =           300.2135f,
-        //     .kd =           20.0f,
-        //     .max_out =      30000.0f,
-        //     .max_iout =     5000.0f,
-        // },
-       .yaw_rate_pid_config = {
-                .kp =           5000.f,
-                .ki =           0.0f,
+        .yaw_rate_pid_config = {
+                .kp =           800.f,
+                .ki =           8.0f,
                 .kd =           0.f,
-                .max_out =      20000.0f,
+                .max_out =      1000.0f,
+                .max_iout =     300.0f,
+        },
+       
+        .pitch_rate_pid_config = {
+                .kp =           9073.0f,
+                .ki =           283.0f,
+                .kd =           0.0f,
+                .max_out =      30000.0f,
                 .max_iout =     5000.0f,
         },
-                //PITCH SPEED PID 科学调参OK 3.17
-        // .pitch_rate_pid_config = {
-        //     .kp =           9073.0f,
-        //     .ki =           283.0f,
-        //     .kd =           0.0f,
-        //     .max_out =      30000.0f,
-        //     .max_iout =     15000.0f,
-        // },
-         .pitch_rate_pid_config = {
-            .kp =           9073.0f,
-            .ki =           283.0f,
-            .kd =           0.0f,
-            .max_out =      30000.0f,
-            .max_iout =     5000.0f,
-        },
-            .yaw_relative_pid_config ={
-                .kp =           8.0f,
-                .ki =           0.0f,
-                .kd =           0.3f,
-                .max_out =      10.0f,
-                .max_iout =     0.0f,
-            },
-            .yaw_absolute_pid_config = {
-                .kp =           12.0f,
-                .ki =           0.0f,
-                .kd =           0.3f,
-                .max_out =      10.0f,
-                .max_iout =     0.0f,
-            },
 
+        .yaw_relative_pid_config ={     //primary
+            .kp =           15.0f,
+            .ki =           0.05f,
+            .kd =           2.5f,
+            .max_out =      15.0f,
+            .max_iout =     0.2f,
+        },
+        
+        .yaw_absolute_pid_config = {   //primary
+            .kp =           30.0f,
+            .ki =           0.5f,
+            .kd =           30.5f,
+            .max_out =      20.0f,
+            .max_iout =     0.0f,
+        },
+
+        // primary
+        // .yaw_absolute_pid_config = {   //primary
+        //     .kp =           30.0f,
+        //     .ki =           0.5f,
+        //     .kd =           30.5f,
+        //     .max_out =      20.0f,
+        //     .max_iout =     0.0f,
+        // },
+        
 
         .pitch_absolute_pid_config = {
             .kp =           20.45f,
@@ -226,7 +224,7 @@ namespace Config
     constexpr fp32 GIMBAL2_YAW_OFFSET_ECD = 3366;
     constexpr fp32 GIMBAL2_PITCH_OFFSET_ECD = 3985;
 
-    constexpr fp32 GIMBAL3_YAW_OFFSET_ECD = 48041;
+    constexpr fp32 GIMBAL3_YAW_OFFSET_ECD = 52504;
     constexpr fp32 GIMBAL3_PITCH_OFFSET_ECD = 3985;
 #else
     constexpr fp32 GIMBAL_YAW_OFFSET_ECD = 5424;
