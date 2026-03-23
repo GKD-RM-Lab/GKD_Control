@@ -392,10 +392,18 @@ namespace Gimbal
     [[noreturn]] void GimbalT::task() {
         std::jthread shoot_thread(&Shoot::Shoot::task, &shoot);
         static const auto runtime_begin = std::chrono::steady_clock::now();
+        Types::ROBOT_MODE last_mode = robot_set->mode;
+        int init_time = 0;
         while (true) {
             const auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
             (std::chrono::steady_clock::now() - runtime_begin) .count();
             update_data();
+
+            if(last_mode != Types::ROBOT_INIT && robot_set->mode == Types::ROBOT_INIT){
+                init_time = 0;
+            }
+
+            last_mode = robot_set->mode;
 
             // {                
             //     static constexpr float MAX_POINT = -0.1f;
@@ -412,7 +420,23 @@ namespace Gimbal
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
                 yaw_motor.give_current = 0;
                 pitch_motor.give_current = 0;
-            } else if (robot_set->mode == Types::ROBOT_MODE::ROBOT_SEARCH) {
+            } else if (robot_set->mode == Types::ROBOT_MODE::ROBOT_INIT) {
+                robot_set->fric_led_open = false;
+                0 >> yaw_relative_pid >> yaw_motor;
+                0 >> pitch_absolute_pid >> pitch_motor;
+                yaw_absolute_pid.clean();
+
+                if(robot_set->referee_info.game_robot_status_data.mains_power_chassis_output != 0)
+                    init_time ++;
+
+                LOG_INFO("init time : %d\n",init_time);
+
+                if(init_time > 3000){
+                    robot_set->mode = Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL;
+                }
+                
+            }           
+            else if (robot_set->mode == Types::ROBOT_MODE::ROBOT_SEARCH) {
                 static float delta = 0;
                 static float delta_1 = 0;
 

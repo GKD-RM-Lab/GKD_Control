@@ -59,8 +59,6 @@ namespace Robot
 
         bool auto_aim_status = false;
 
-        bool chassis_recover_mode = false;
-
         Types::ROBOT_MODE mode = Types::ROBOT_MODE::ROBOT_NO_FORCE;
         Types::ROBOT_MODE last_mode = Types::ROBOT_MODE::ROBOT_NO_FORCE;
 

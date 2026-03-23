@@ -6,6 +6,7 @@
 #include "logger.hpp"
 #include "socket_interface.hpp"
 #include "robot_type_config.hpp"
+#include "types.hpp"
 #include "user_lib.hpp"
 #include "utils.hpp"
 
@@ -25,13 +26,6 @@ namespace Chassis
 #else
         return Power::Division::INFANTRY;
 #endif
-    }
-
-    fp32 Chassis::getRelativeYaw() const {
-        return MUXDEF(
-            CONFIG_SENTRY,
-            robot_set->gimbal_sentry_yaw_reletive,
-            robot_set->gimbalT_1_yaw_reletive);
     }
 
     void Chassis::setAllMotorsZero() {
@@ -89,8 +83,7 @@ namespace Chassis
                 last_wz_direction = 0.f;
                 robot_set->spin_state = false;
 
-                robot_set->chassis_recover_mode = true;
-
+                robot_set->mode = Types::ROBOT_MODE::ROBOT_INIT;
                 UserLib::sleep_ms(config.ControlTime);
                 continue;
             }
@@ -142,6 +135,7 @@ namespace Chassis
                     motors[i].give_current = cmd_power[i];
                 }
             }
+            // LOG_INFO("chassis mode: %d, vx_set: %f, vy_set: %f, wz_set: %f\n", robot_set->mode, vx_set, vy_set, wz_set);
             UserLib::sleep_ms(config.ControlTime);
         }
     }
@@ -156,51 +150,35 @@ namespace Chassis
             vx_set = cos_yaw * robot_set->vx_set + sin_yaw * robot_set->vy_set;
             vy_set = -sin_yaw * robot_set->vx_set + cos_yaw * robot_set->vy_set;
 
-            if (robot_set->wz_set == 0.f) {  
-                bool recover_handled = false;
-                if (robot_set->chassis_recover_mode) {
-                    const fp32 current_angle = getRelativeYaw();
-
-                    if (fabs(current_angle) > 0.1f) {
-                        chassis_angle_pid.set(0.f);
-                        if (chassis_angle_pid.out > 0.f) {
-                            wz_set = 1.f;
-                        } else if (chassis_angle_pid.out < 0.f) {
-                            wz_set = -1.f;
-                        } else {
-                            wz_set = 0.f;
-                        }
-                        recover_handled = true;
+            if (robot_set->wz_set == 0.f) {
+                if (last_wz_direction != 0.f) {
+                    const fp32 current_angle = MUXDEF(
+                        CONFIG_SENTRY,
+                        robot_set->gimbal_sentry_yaw_reletive,
+                        robot_set->gimbalT_1_yaw_reletive);
+                    if (fabs(current_angle) > 0.1f && fabs(current_angle) < 0.6f) {
+                        wz_set = last_wz_direction - 0.5;
+                    } else if (fabs(current_angle) > 0.6f) {
+                        wz_set = last_wz_direction;
                     } else {
-                        robot_set->chassis_recover_mode = false;
+                        chassis_angle_pid.set(0.f);
+                        wz_set = chassis_angle_pid.out;
                         last_wz_direction = 0.f;
                     }
+                } else {
+                    chassis_angle_pid.set(0.f);
+                    wz_set = chassis_angle_pid.out;
                 }
-
-                if (!recover_handled) {
-                    if (last_wz_direction != 0.f) {  
-                        const fp32 current_angle = getRelativeYaw();
-                        if (fabs(current_angle) > 0.1f && fabs(current_angle) < 0.6f) {  
-                            wz_set = last_wz_direction - 0.5;    
-                        }else if(fabs(current_angle) > 0.6f){
-                            wz_set = last_wz_direction;
-                        } 
-                        else {  
-                            chassis_angle_pid.set(0.f);  
-                            wz_set = chassis_angle_pid.out;  
-                            last_wz_direction = 0.f;   
-                        }                     
-                    } else {  
-                        chassis_angle_pid.set(0.f);  
-                        wz_set = chassis_angle_pid.out;  
-                    }
-                }
-            } else {  
-            wz_set = robot_set->wz_set;  
-            robot_set->chassis_recover_mode = false;
-            last_wz_direction = wz_set > 0 ? 1.0f : -1.0f; 
+            } else {
+                wz_set = robot_set->wz_set;
+                last_wz_direction = wz_set > 0 ? 1.0f : -1.0f;
             }
-    }
+        }
+
+        if (robot_set->mode == Types::ROBOT_INIT) {
+            wz_set = 0;
+        }
+           
 
         wheel_speed[1] = -vx_set - vy_set + wz_set;
         wheel_speed[3] = -vx_set + vy_set + wz_set;

@@ -147,7 +147,8 @@ namespace Types
         ROBOT_FOLLOW_GIMBAL,
         ROBOT_SEARCH,
         ROBOT_IDLE,
-        ROBOT_NOT_FOLLOW
+        ROBOT_NOT_FOLLOW,
+        ROBOT_INIT
     };
 
     typedef struct

@@ -38,7 +38,6 @@ namespace Chassis
 
        private:
         static Power::Division resolvePowerDivision();
-        fp32 getRelativeYaw() const;
         void setAllMotorsZero();
         void cleanWheelControllers(bool resetWheelSpeed);
 

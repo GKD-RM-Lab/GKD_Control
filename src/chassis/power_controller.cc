@@ -678,24 +678,24 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
                 char rlsReasonText[96] = {};
                 Utils::Log::bitmask_to_cstr(
                     rlsReasonMask, kRlsReasonBitDesc, rlsReasonText, sizeof(rlsReasonText));
-                LOG_INFO(
-                    "[PWR_RLS] active: %s(raw:%s) | reason=0x%02X(%s) | en: %s | cap_ok: %s(raw:%s) | pwr_ok: %s | exc_ok: %s(raw:%s) | finite: %s | db:%u/%u | k1=%.5f | k2=%.5f | meas=%.2f\n",
-                    rlsActive ? "on" : "off",
-                    rlsRawActive ? "on" : "off",
-                    rlsReasonMask,
-                    rlsReasonText,
-                    (rlsEnabled == Manager::RLSEnabled::Enable) ? "on" : "off",
-                    capFeedbackHealthyLatched ? "on" : "off",
-                    capFeedbackHealthyRaw ? "on" : "off",
-                    powerGoodLatched ? "on" : "off",
-                    excitationGoodLatched ? "on" : "off",
-                    excitationGoodRawOn ? "on" : "off",
-                    finiteSignal ? "on" : "off",
-                    rlsEnableDebounce,
-                    rlsDisableDebounce,
-                    k1,
-                    k2,
-                    measuredPower);
+                // LOG_INFO(
+                //     "[PWR_RLS] active: %s(raw:%s) | reason=0x%02X(%s) | en: %s | cap_ok: %s(raw:%s) | pwr_ok: %s | exc_ok: %s(raw:%s) | finite: %s | db:%u/%u | k1=%.5f | k2=%.5f | meas=%.2f\n",
+                //     rlsActive ? "on" : "off",
+                //     rlsRawActive ? "on" : "off",
+                //     rlsReasonMask,
+                //     rlsReasonText,
+                //     (rlsEnabled == Manager::RLSEnabled::Enable) ? "on" : "off",
+                //     capFeedbackHealthyLatched ? "on" : "off",
+                //     capFeedbackHealthyRaw ? "on" : "off",
+                //     powerGoodLatched ? "on" : "off",
+                //     excitationGoodLatched ? "on" : "off",
+                //     excitationGoodRawOn ? "on" : "off",
+                //     finiteSignal ? "on" : "off",
+                //     rlsEnableDebounce,
+                //     rlsDisableDebounce,
+                //     k1,
+                //     k2,
+                //     measuredPower);
                 lastRlsActive = rlsActive;
                 lastRlsReasonMask = rlsReasonMask;
             }
