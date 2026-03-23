@@ -49,7 +49,8 @@ namespace Device
 
         if (!robot_set->referee_info.game_robot_status_data.mains_power_shooter_output) {
             robot_set->friction_open = false;
-             robot_set->friction_real_state = false;
+            robot_set->friction_real_state = false;
+            robot_set->fric_led_open = false;
             robot_set->shoot_open = SHOOT_PERMISSION_NONE;
             robot_set->cv_fire = false;
             friction_key_pressed_last = false;

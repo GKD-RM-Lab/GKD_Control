@@ -34,7 +34,7 @@ namespace Device
             uint8_t tail = 0x55;
         } __attribute__((packed));
 
-        void sendLedFrame(const std::shared_ptr<Robot::Robot_set> &robot_set, bool fric_state) {
+        void sendLedFrame(const std::shared_ptr<Robot::Robot_set> &robot_set) {
             static SERIAL *led_serial = IO::io<SERIAL>[kLedSerialName];
             static uint8_t last_led_mask = 0xFF;
             static auto last_send_time = std::chrono::steady_clock::now();
@@ -47,7 +47,7 @@ namespace Device
             if (robot_set->spin_state) {
                 led_mask |= 0x01;
             }
-            if (fric_state) {
+            if (robot_set->fric_led_open) {
                 led_mask |= 0x02;
             }
 
@@ -299,8 +299,7 @@ namespace Device
                 remain_bullet_num_for_ui);
 
 #ifdef CONFIG_INFANTRY
-            
-            sendLedFrame(robot_set, robot_set->fric_led_open);
+            sendLedFrame(robot_set);
 #endif
     
             

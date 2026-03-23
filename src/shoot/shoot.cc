@@ -94,7 +94,6 @@ namespace Shoot
 
     void Shoot::init(const std::shared_ptr<Robot::Robot_set>& robot) {
         robot_set = robot;
-
         left_friction.enable();
         right_friction.enable();
         trigger.enable();
@@ -113,14 +112,12 @@ namespace Shoot
                 trigger.set_zero();
                 left_friction.set_zero();
                 right_friction.set_zero();
-                if (!friction_ramp.out) {
-                    friction_ramp.out = 0;
-                }
+                friction_ramp.out = 0.f;
                 robot_set->friction_real_state = false;
+                robot_set->fric_led_open = false;
                 UserLib::sleep_ms(Config::SHOOT_CONTROL_TIME);
                 continue;
             }
-            // LOG_INFO("%d\n", trigger.motor_measure_.given_current);
             if (robot_set->mode == Types::ROBOT_MODE::ROBOT_NO_FORCE) {
                 left_friction.set(0);
                 right_friction.set(0);
@@ -301,7 +298,7 @@ namespace Shoot
                     trigger.set(Config::CONTINUE_TRIGGER_SPEED);
                 }
             }
-            LOG_INFO("friic velo:%d\n", left_friction.motor_measure_.speed_rpm);
+            // LOG_INFO("friic velo:%d\n", left_friction.motor_measure_.speed_rpm);
             UserLib::sleep_ms(Config::SHOOT_CONTROL_TIME);
         }
     }

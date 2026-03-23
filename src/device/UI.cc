@@ -865,8 +865,12 @@ namespace
         }
     }
 
-    void refresh_dynamic_ui(Device::Base *base_, u32 graph_operate, u32 string_operate) {
+    void refresh_dynamic_ui_full(Device::Base *base_, u32 graph_operate, u32 string_operate) {
         sync_parameter();
+
+        draw_auto_aim_graph(&auto_aim_range, graph_operate);
+        UI_ReFresh(base_, 1, auto_aim_range);
+        osDelay(kUiPacketGapMs);
 
         draw_cap_energy_graph(&cap_percentage, &cap_full_frame, graph_operate, graph_operate);
         UI_ReFresh(base_, 2, cap_percentage, cap_full_frame);
@@ -879,10 +883,34 @@ namespace
         build_fired_text(string_operate);
         String_ReFresh(base_, fired_text_data);
         osDelay(kUiPacketGapMs);
+    }
 
-        draw_auto_aim_graph(&auto_aim_range, graph_operate);
+    void refresh_dynamic_ui_incremental(Device::Base *base_) {
+        static int refresh_phase = 0;
+
+        sync_parameter();
+
+        draw_auto_aim_graph(&auto_aim_range, UI_Graph_Change);
         UI_ReFresh(base_, 1, auto_aim_range);
         osDelay(kUiPacketGapMs);
+
+        switch (refresh_phase) {
+            case 0:
+                draw_cap_energy_graph(&cap_percentage, &cap_full_frame, UI_Graph_Change, UI_Graph_Change);
+                UI_ReFresh(base_, 2, cap_percentage, cap_full_frame);
+                break;
+            case 1:
+                build_state_text(UI_Graph_Change);
+                String_ReFresh(base_, state_text_data);
+                break;
+            default:
+                build_fired_text(UI_Graph_Change);
+                String_ReFresh(base_, fired_text_data);
+                break;
+        }
+        osDelay(kUiPacketGapMs);
+
+        refresh_phase = (refresh_phase + 1) % 3;
     }
 
     void full_redraw_ui(Device::Base *base_) {
@@ -890,7 +918,7 @@ namespace
         ui_parameter_init();
         draw_static_ui(base_);
         osDelay(kUiPacketGapMs);
-        refresh_dynamic_ui(base_, UI_Graph_ADD, UI_Graph_ADD);
+        refresh_dynamic_ui_full(base_, UI_Graph_ADD, UI_Graph_ADD);
     }
 }  // namespace
 
@@ -916,7 +944,7 @@ void custom_ui_task(Device::Base *base_, uint8_t &robot_id_) {
             full_redraw_ui(base_);
             last_full_redraw_time = std::chrono::steady_clock::now();
         } else {
-            refresh_dynamic_ui(base_, UI_Graph_Change, UI_Graph_Change);
+            refresh_dynamic_ui_incremental(base_);
         }
 
         last_robot_id = current_robot_id;
@@ -1136,7 +1164,7 @@ void UI_init_draw(Device::Base *base_) {
 
 /*刷新动态参数*/
 void update_dynamic_paramater(Device::Base *base_) {
-    refresh_dynamic_ui(base_, UI_Graph_Change, UI_Graph_Change);
+    refresh_dynamic_ui_incremental(base_);
 }
 
 /*刷新动态参数*/
