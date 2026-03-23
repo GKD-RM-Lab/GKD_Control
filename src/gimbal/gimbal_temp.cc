@@ -423,15 +423,16 @@ namespace Gimbal
             } else if (robot_set->mode == Types::ROBOT_MODE::ROBOT_INIT) {
                 robot_set->fric_led_open = false;
                 0 >> yaw_relative_pid >> yaw_motor;
-                0 >> pitch_absolute_pid >> pitch_motor;
+                // 0 >> pitch_absolute_pid >> pitch_motor;
                 yaw_absolute_pid.clean();
 
                 if(robot_set->referee_info.game_robot_status_data.mains_power_chassis_output != 0)
                     init_time ++;
 
-                LOG_INFO("init time : %d\n",init_time);
+                // LOG_INFO("init time : %d\n",init_time);
 
                 if(init_time > 3000){
+                    *yaw_set = imu_yaw.yaw;
                     robot_set->mode = Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL;
                 }
                 
