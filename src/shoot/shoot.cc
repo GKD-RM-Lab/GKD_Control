@@ -134,8 +134,8 @@ namespace Shoot
                         right_friction.data_.output_linear_velocity < 0.5
                     ? false
                     : true;
-            robot_set->fric_led_open = left_friction.data_.output_linear_velocity < -2.0 && 
-                right_friction.data_.output_linear_velocity > 2.0;
+            robot_set->fric_led_open = left_friction.motor_measure_.speed_rpm < -4000.0 && 
+                    right_friction.motor_measure_.speed_rpm > 4000.0;
             // LOG_INFO(
             //     "ramp %f %f\n", friction_ramp.out, right_friction.data_.output_linear_velocity);
 
@@ -301,7 +301,7 @@ namespace Shoot
                     trigger.set(Config::CONTINUE_TRIGGER_SPEED);
                 }
             }
-            // LOG_INFO("friic velo:%f\n", right_friction.data_.output_linear_velocity);
+            LOG_INFO("friic velo:%d\n", left_friction.motor_measure_.speed_rpm);
             UserLib::sleep_ms(Config::SHOOT_CONTROL_TIME);
         }
     }
