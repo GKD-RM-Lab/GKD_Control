@@ -34,6 +34,10 @@ namespace Device
         give_current = static_cast<int16_t>(x);
         send_command(command_header, give_current);
     }
+    void M9025::set_zero() {
+        give_current = 0;
+        send_command(command_header, give_current);
+    }
 
     void M9025::Message::unpack(const can_frame& frame) {
         ecd = (uint16_t)(frame.data[7] << 8 | frame.data[6]);

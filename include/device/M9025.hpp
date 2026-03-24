@@ -33,6 +33,7 @@ namespace Device
         M9025(const std::string &can_name, int id, uint8_t command_header = 0xA0);
         ~M9025() override = default;
         void set(float x) override;
+        void set_zero();
         void unpack(const can_frame& frame);
         void enable();
         void run();

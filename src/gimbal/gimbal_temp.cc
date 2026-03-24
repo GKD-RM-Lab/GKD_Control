@@ -176,7 +176,7 @@ namespace Gimbal
             config.header, [this](const Robot::Auto_aim_control &vc) {
                 // LOG_INFO("socket recive %f %f %d %d\n",vc.yaw_set,vc.pitch_set,vc.fire,config.gimbal_id);
                 receive_auto_aim = std::chrono::steady_clock::now();
-                if (robot_set->auto_aim_status) {
+                if (robot_set->auto_aim_status && robot_set->mode != Types::ROBOT_MODE::ROBOT_INIT) {
                     robot_set->set_mode(Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL);
                     robot_set->cv_fire = vc.fire;
                     if (vc.fire && ISDEF(CONFIG_SENTRY)) {
@@ -423,8 +423,9 @@ namespace Gimbal
             } else if (robot_set->mode == Types::ROBOT_MODE::ROBOT_INIT) {
                 robot_set->fric_led_open = false;
                 0 >> yaw_relative_pid >> yaw_motor;
-                // 0 >> pitch_absolute_pid >> pitch_motor;
+                0 >> pitch_absolute_pid >> pitch_motor;
                 yaw_absolute_pid.clean();
+                pitch_absolute_pid.clean();
 
                 if(robot_set->referee_info.game_robot_status_data.mains_power_chassis_output != 0)
                     init_time ++;
@@ -433,6 +434,7 @@ namespace Gimbal
 
                 if(init_time > 3000){
                     *yaw_set = imu_yaw.yaw;
+                    *pitch_set = imu_pitch.pitch;
                     robot_set->mode = Types::ROBOT_MODE::ROBOT_FOLLOW_GIMBAL;
                 }
                 
@@ -491,7 +493,7 @@ namespace Gimbal
             pkg.roll = imu_yaw.roll;
             pkg.red = robot_set->referee_info.game_robot_status_data.robot_id < 100;
             // LOG_INFO("%s\n", (pkg.red == 1) ? "red" : "blue" );
-            // LOG_INFO("pkg.roll:%f\n", pkg.roll);
+            // LOG_INFO("pkg.pitch:%f | pitch:%f | errr:%f\n", pkg.pitch, *pitch_set, pkg.pitch - *pitch_set);
             IO::io<SOCKET>["AUTO_AIM_CONTROL"]->send(pkg);
 
 

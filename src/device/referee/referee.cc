@@ -302,7 +302,7 @@ namespace Device
             sendLedFrame(robot_set);
 #endif
     
-            
+            // LOG_INFO("game status:%d\n", robot_set->referee_info.game_status_data.game_progress);
             //  LOG_INFO(
             //     "status: gimbal:%s | chassis:%s | shooter:%s\n",
             //     (robot_set->referee_info.game_robot_status_data.mains_power_gimbal_output == 0) ? "off" : "on",

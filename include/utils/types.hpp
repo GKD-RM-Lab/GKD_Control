@@ -148,7 +148,7 @@ namespace Types
         ROBOT_SEARCH,
         ROBOT_IDLE,
         ROBOT_NOT_FOLLOW,
-        ROBOT_INIT
+        ROBOT_INIT,
     };
 
     typedef struct

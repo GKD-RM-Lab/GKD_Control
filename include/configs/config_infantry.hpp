@@ -101,14 +101,22 @@ namespace Config
         //     .max_iout =     0.0f,
         // },
         
-
-        .pitch_absolute_pid_config = {
+         .pitch_absolute_pid_config = {
             .kp =           20.45f,
             .ki =           0.15f,
             .kd =           0.0f,
             .max_out =      10.0f,
             .max_iout =     1.5f,
         },
+        
+
+        // .pitch_absolute_pid_config = {
+        //     .kp =           20.45f,
+        //     .ki =           0.25f,
+        //     .kd =           0.0f,
+        //     .max_out =      10.0f,
+        //     .max_iout =     2.5f,
+        // },
         .gimbal_motor_dir = 1.0,
         .gimbal_id = 1,
         .ControlTime = 1,
