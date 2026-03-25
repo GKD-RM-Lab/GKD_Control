@@ -128,7 +128,7 @@ namespace Power
     constexpr static uint8_t SentryChassisPowerLimit = 100U;
     constexpr static uint8_t RefGameTypeAlliance3v3 = 4U;
     constexpr static uint8_t RefGameTypeInfantryDuel = 5U;
-    constexpr static float InfantryDuelChassisPowerLimit = 120.0f;
+    constexpr static float InfantryDuelChassisPowerLimit = 120.0f * 0.9;
 
     enum class Division
     {

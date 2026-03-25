@@ -26,8 +26,8 @@ namespace Device
     }
 
     void Rc_Controller::unpack(const Types::ReceivePacket_RC_CTRL &pkg) {
-        static constexpr float MAX_SPIN_SPEED = 1.6f;
-        static constexpr float MIN_SPIN_SPEED = 1.f;
+        static constexpr float MAX_SPIN_SPEED = 1.8f;
+        static constexpr float MIN_SPIN_SPEED = 1.2f;
         static constexpr float spin_acc = 6.f;
         static bool wz_key_pressed_last = false;
         static bool friction_key_pressed_last = false;
@@ -102,14 +102,15 @@ namespace Device
 
         // 切换摩擦轮状态
         if (robot_set->referee_info.game_robot_status_data.mains_power_shooter_output) {
-            if (pkg.key & KEY_F) {
-                if (!friction_key_pressed_last) {
-                    robot_set->friction_open = !robot_set->friction_open;
-                }
-                friction_key_pressed_last = true;
-            } else {
-                friction_key_pressed_last = false;
-            }
+            // if (pkg.key & KEY_F) {
+            //     if (!friction_key_pressed_last) {
+            //         robot_set->friction_open = !robot_set->friction_open;
+            //     }
+            //     friction_key_pressed_last = true;
+            // } else {
+            //     friction_key_pressed_last = false;
+            // }
+            robot_set->friction_open = true;
         }
 
 
@@ -177,23 +178,25 @@ namespace Device
             else
                 robot_set->wz_set = 0;
 
-            if (pkg.s2 == S2_UP)
-                robot_set->friction_open = true;
-            else
-                robot_set->friction_open = false;
+            // if (pkg.s2 == S2_UP)
+            //     robot_set->friction_open = true;
+            // else
+            //     robot_set->friction_open = false;
+            robot_set->friction_open = true;
+
 
             IFDEF(
                 CONFIG_SENTRY,
                 if (pkg.s2 == S2_DOWN) {
                     robot_set->sentry_follow_gimbal = true;
-                    robot_set->friction_open = true;
+                    // robot_set->friction_open = true;
                     if (pkg.ch4 == ROLL_DOWN_MAX)
                         robot_set->shoot_open = SHOOT_PERMISSION_GIMBAL1s;
                     else
                         robot_set->shoot_open = SHOOT_PERMISSION_NONE;
                 } else {
                     robot_set->sentry_follow_gimbal = false;
-                    robot_set->friction_open = false;
+                    // robot_set->friction_open = false; // 所有相关fric注释是为了比赛一直开摩擦轮
                 })
         }
         update_time();

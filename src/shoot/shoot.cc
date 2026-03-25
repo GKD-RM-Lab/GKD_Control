@@ -18,7 +18,7 @@ namespace Shoot
     namespace {
         constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
         constexpr uint8_t REF_GAME_TYPE_INFANTRY_DUEL = 5U;
-        constexpr float INFANTRY_DUEL_HEAT_BLOCK_RATIO = 0.6f;
+        constexpr float INFANTRY_DUEL_HEAT_BLOCK_RATIO = 0.55f;
 
         enum class HeatMode : uint8_t
         {
@@ -123,6 +123,7 @@ namespace Shoot
                 right_friction.set(0);
                 trigger.set(0);
             }
+            // LOG_INFO("open?:%d\n", robot_set->friction_open);
             friction_ramp.update(robot_set->friction_open ? Config::FRICTION_MAX_SPEED : 0.f);
 
             // friction really open?
@@ -178,7 +179,7 @@ namespace Shoot
             int32_t release_margin = heat_release_margin(heat_mode);
             const bool infantry_duel_mode = is_infantry_duel_mode(*robot_set);
             if (infantry_duel_mode && heat_limit > 0U) {
-                const int32_t duel_margin = std::max(
+                 const int32_t duel_margin = std::max(
                     1,
                     static_cast<int32_t>(
                         static_cast<float>(heat_limit) * (1.0f - INFANTRY_DUEL_HEAT_BLOCK_RATIO)));

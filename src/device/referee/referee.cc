@@ -287,11 +287,10 @@ namespace Device
                 CONFIG_HERO,
                 robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_42_mm > 0,
                 robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_17_mm > 0);
-            const bool fric_state = robot_set->friction_real_state && referee_fire_allowance;
             // LOG_INFO("ui update\n");
             update_ui_data(
                 &base_,
-                fric_state,
+                robot_set->fric_led_open,
                 robot_set->cv_fire,
                 robot_set->spin_state,
                 ((float)robot_set->super_cap_info.capEnergy / 250) * 100,
