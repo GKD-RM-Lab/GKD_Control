@@ -115,6 +115,7 @@ namespace Shoot
 
             if(!shooter_output_enabled) {
                 trigger.set_zero();
+                trigger.controller.clean();
                 left_friction.set_zero();
                 right_friction.set_zero();
                 friction_ramp.out = 0.f;

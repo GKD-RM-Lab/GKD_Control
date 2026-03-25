@@ -693,6 +693,7 @@ State_Indicate_Type State_Data;
 String_Data state_text_data;
 String_Data fired_text_data;
 String_Data warning_text_data;
+String_Data warning_q_text_data;
 Graph_Data shoot_distance_bar, cap_percentage, cap_full_frame, auto_aim_range;
 Graph_Data still_cross_line[10];
 char cap_text[30], auto_aim_text[10], fired_text[30], warning_text[16];
@@ -705,6 +706,9 @@ namespace
     constexpr u32 kWarningTextSize = 30;
     constexpr u32 kWarningTextChars = 8;
     constexpr u32 kWarningTextY = 330;
+    constexpr u32 kWarningQTextSize = 30;
+    constexpr u32 kWarningQTextChars = 1;
+    constexpr u32 kWarningQTextY = 370;
     constexpr int kUiPacketGapMs = 30;
     constexpr int kUiUpdateIntervalMs = 200;
     constexpr int kUiRetryIntervalMs = 100;
@@ -880,12 +884,32 @@ namespace
             warning_text);
     }
 
+    void draw_warning_q_text(Device::Base *base_) {
+        const u32 start_x =
+            Crosshair_Data.center[0] - (kWarningQTextSize * kWarningQTextChars) / 4;
+        String_Draw(
+            &warning_q_text_data,
+            "wrq",
+            UI_Graph_ADD,
+            1,
+            UI_Color_Purplish_red,
+            kWarningQTextSize,
+            kWarningQTextChars,
+            3,
+            start_x,
+            kWarningQTextY,
+            "Q");
+        String_ReFresh(base_, warning_q_text_data);
+    }
+
     void draw_static_ui(Device::Base *base_) {
         if (UI_MODE == UI_HERO) {
             draw_crosshair_hero(base_);
         } else if (UI_MODE == UI_INFANTRY) {
             draw_crosshair_infantry(base_);
         }
+        osDelay(kUiPacketGapMs);
+        draw_warning_q_text(base_);
     }
 
     void refresh_dynamic_ui_full(Device::Base *base_, u32 graph_operate, u32 string_operate) {
