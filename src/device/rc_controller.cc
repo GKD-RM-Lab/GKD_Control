@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cmath>
 #include "io.hpp"
+#include "referee_runtime.hpp"
 #include "serial_interface.hpp"
 #include "types.hpp"
 #include "utils.hpp"
@@ -35,19 +36,24 @@ namespace Device
         static const auto runtime_begin = std::chrono::steady_clock::now();
         const auto elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>
             (std::chrono::steady_clock::now() - runtime_begin) .count();
+        const bool referee_connected = RefereeRuntime::is_connected(*robot_set);
+        const bool chassis_output_enabled =
+            RefereeRuntime::chassis_output_enabled(*robot_set, referee_connected);
+        const bool shooter_output_enabled =
+            RefereeRuntime::shooter_output_enabled(*robot_set, referee_connected);
        
         if (pkg.s1 == S1_DOWN && pkg.s2 == S2_DOWN && pkg.ch4 == ROLL_UP_MAX) {
             inited = true;
         } 
 
-        if (!robot_set->referee_info.game_robot_status_data.mains_power_chassis_output) {
+        if (!chassis_output_enabled) {
             robot_set->wz_set = 0;
             robot_set->spin_state = false;
             wz_key_pressed_last = false;
             spin_enabled = false;
         }
 
-        if (!robot_set->referee_info.game_robot_status_data.mains_power_shooter_output) {
+        if (!shooter_output_enabled) {
             robot_set->friction_open = false;
             robot_set->friction_real_state = false;
             robot_set->fric_led_open = false;
@@ -84,7 +90,7 @@ namespace Device
 
 
         // 切换自旋状态
-        if (robot_set->referee_info.game_robot_status_data.mains_power_chassis_output) {
+        if (chassis_output_enabled) {
             if (pkg.key & KEY_R) {
                 if (!wz_key_pressed_last) {
                     spin_enabled = !spin_enabled;
@@ -101,7 +107,7 @@ namespace Device
         }
 
         // 切换摩擦轮状态
-        if (robot_set->referee_info.game_robot_status_data.mains_power_shooter_output) {
+        if (shooter_output_enabled) {
             // if (pkg.key & KEY_F) {
             //     if (!friction_key_pressed_last) {
             //         robot_set->friction_open = !robot_set->friction_open;

@@ -2,6 +2,7 @@
 
 #include <future>
 
+#include "referee_runtime.hpp"
 #include "robot_type_config.hpp"
 #include "socket_interface.hpp"
 #include "types.hpp"
@@ -80,7 +81,9 @@ namespace Gimbal
             gimbal_info.pitch = imu.pitch;
             gimbal_info.hp = robot_set->referee_info.game_robot_status_data.remain_hp * 1. /
                              robot_set->referee_info.game_robot_status_data.max_hp;
+            const bool referee_connected = RefereeRuntime::is_connected(*robot_set);
             gimbal_info.start =
+                referee_connected &&
                 (robot_set->referee_info.game_status_data.game_progress & 0x0f) == 4;
 
             // FIXME: random robot_set used

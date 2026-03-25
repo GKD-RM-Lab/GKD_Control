@@ -96,4 +96,20 @@ namespace Power::detail
                 return InfantryChassisPowerLimit_HP_FIRST[0];
         }
     }
+
+    inline float offline_referee_limit(
+        const Manager &manager,
+        uint8_t latestLevel) {
+        uint8_t level = std::clamp<uint8_t>(latestLevel, 1U, maxLevel);
+        switch (manager.division) {
+            case Division::HERO:
+                return HeroChassisPowerLimit_HP_FIRST[level - 1U];
+            case Division::INFANTRY:
+                return static_cast<float>(InfantryChassisPowerLimit_HP_FIRST[level - 1U]);
+            case Division::SENTRY:
+                return SentryChassisPowerLimit;
+            default:
+                return InfantryChassisPowerLimit_HP_FIRST[0];
+        }
+    }
 }  // namespace Power::detail

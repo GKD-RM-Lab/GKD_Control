@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "io.hpp"
+#include "referee_runtime.hpp"
 #include "serial_interface.hpp"
 #include "utils.hpp"
 
@@ -14,7 +15,6 @@ namespace Device
         constexpr uint16_t kPowerHeatDataLength = 14;
         constexpr uint16_t kBulletRemainingLength = 8;
         constexpr uint16_t kBulletRemainingLengthLegacy = 6;
-        constexpr uint64_t kRefereeOfflineTimeoutMs = 300U;
         constexpr uint16_t kBulletAllowanceDeltaGuard = 1000U;
         constexpr uint8_t kGameProgressSettlement = 5U;
 
@@ -34,7 +34,9 @@ namespace Device
             uint8_t tail = 0x55;
         } __attribute__((packed));
 
-        void sendLedFrame(const std::shared_ptr<Robot::Robot_set> &robot_set) {
+        void sendLedFrame(
+            const std::shared_ptr<Robot::Robot_set> &robot_set,
+            bool referee_connected) {
             static SERIAL *led_serial = IO::io<SERIAL>[kLedSerialName];
             static uint8_t last_led_mask = 0xFF;
             static auto last_send_time = std::chrono::steady_clock::now();
@@ -49,6 +51,9 @@ namespace Device
             }
             if (robot_set->fric_led_open) {
                 led_mask |= 0x02;
+            }
+            if (!referee_connected) {
+                led_mask |= 0x04;
             }
 
             auto now = std::chrono::steady_clock::now();
@@ -221,18 +226,55 @@ namespace Device
         static uint32_t fired_bullet_total = 0;
         static uint16_t last_remain_bullet_num = 0;
         static bool bullet_counter_inited = false;
+        constexpr auto kReconnectSleep = std::chrono::milliseconds(200);
+        auto last_reconnect_log = std::chrono::steady_clock::now() - std::chrono::seconds(10);
+
+        auto handle_disconnect = [&](const char *tag, const std::exception &e) {
+            LOG_ERR("referee [%s]: %s\n", tag, e.what());
+            try {
+                if (base_.serial_.isOpen()) {
+                    base_.serial_.close();
+                }
+            } catch (const std::exception &close_error) {
+                LOG_ERR("referee [close]: %s\n", close_error.what());
+            }
+            base_.referee_data_is_online_ = false;
+            robot_set->referee_last_rx_ms = 0;
+            std::this_thread::sleep_for(kReconnectSleep);
+        };
 
         while (1) {
-            read();
+            try {
+                if (!base_.serial_.isOpen()) {
+                    try {
+                        base_.serial_.open();
+                        LOG_INFO("referee serial reconnected\n");
+                    } catch (const std::exception &e) {
+                        const auto now = std::chrono::steady_clock::now();
+                        if (now - last_reconnect_log > std::chrono::seconds(2)) {
+                            LOG_ERR("referee serial offline, waiting reconnect: %s\n", e.what());
+                            last_reconnect_log = now;
+                        }
+                        base_.referee_data_is_online_ = false;
+                        robot_set->referee_last_rx_ms = 0;
+                        std::this_thread::sleep_for(kReconnectSleep);
+                        continue;
+                    }
+                }
+                read();
+            } catch (const serial::SerialException &e) {
+                handle_disconnect("serial", e);
+            } catch (const serial::IOException &e) {
+                handle_disconnect("io", e);
+            } catch (const serial::PortNotOpenedException &e) {
+                handle_disconnect("not_open", e);
+            } catch (const std::exception &e) {
+                handle_disconnect("unexpected", e);
+            }
 
-            const uint64_t now_ms = static_cast<uint64_t>(
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now().time_since_epoch())
-                    .count());
-            const bool referee_connected =
-                robot_set->referee_last_rx_ms > 0 &&
-                now_ms >= robot_set->referee_last_rx_ms &&
-                now_ms - robot_set->referee_last_rx_ms <= kRefereeOfflineTimeoutMs;
+            const uint64_t now_ms = RefereeRuntime::now_ms();
+            const bool referee_connected = RefereeRuntime::is_connected(*robot_set, now_ms);
+            base_.referee_data_is_online_ = referee_connected;
             const uint16_t remain_bullet_num = MUXDEF(
                 CONFIG_HERO,
                 robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_42_mm,
@@ -283,10 +325,6 @@ namespace Device
             const uint32_t remain_bullet_num_for_ui =
                 bullet_counter_inited ? stable_remain_bullet_num : 0U;
 
-            bool referee_fire_allowance = MUXDEF(
-                CONFIG_HERO,
-                robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_42_mm > 0,
-                robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_17_mm > 0);
             // LOG_INFO("ui update\n");
             update_ui_data(
                 &base_,
@@ -301,7 +339,7 @@ namespace Device
                     remain_bullet_num < 20U);
 
 #ifdef CONFIG_INFANTRY
-            sendLedFrame(robot_set);
+            sendLedFrame(robot_set, referee_connected);
 #endif
     
             // LOG_INFO("game status:%d\n", robot_set->referee_info.game_status_data.game_progress);

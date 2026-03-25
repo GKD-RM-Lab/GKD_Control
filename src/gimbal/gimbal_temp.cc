@@ -11,6 +11,7 @@
 #include "UI.hpp"
 #include "gimbal/gimbal_config.hpp"
 #include "macro_helpers.hpp"
+#include "referee_runtime.hpp"
 #include "robot_controller.hpp"
 #include "robot_type_config.hpp"
 #include "serial/serial.h"
@@ -427,7 +428,9 @@ namespace Gimbal
                 yaw_absolute_pid.clean();
                 pitch_absolute_pid.clean();
 
-                if(robot_set->referee_info.game_robot_status_data.mains_power_chassis_output != 0)
+                if (RefereeRuntime::chassis_output_enabled(
+                        *robot_set,
+                        RefereeRuntime::is_connected(*robot_set)))
                     init_time ++;
 
                 // LOG_INFO("init time : %d\n",init_time);

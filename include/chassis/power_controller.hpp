@@ -140,7 +140,6 @@ namespace Power
     struct PowerObj
     {
        public:
-        // 来自底盘速度环的数据（每个轮子一份）
         float pidOutput;     // 速度环输出的电流指令（DJI原始量纲）
         float curAv;         // 当前角速度(rad/s)
         float setAv;         // 目标角速度(rad/s)

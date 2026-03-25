@@ -5,11 +5,11 @@
 
 #include "macro_helpers.hpp"
 #include "power_controller.hpp"
+#include "referee_runtime.hpp"
 #include "utils.hpp"
 
 namespace Device
 {
-    static constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
     static constexpr float CAP_POWER_LIMIT_SCALE = 0.9f;
 
     void Super_Cap::init(
@@ -31,10 +31,14 @@ namespace Device
         static int delta = 0;
         delta++;
 
-        const uint16_t robot_level = robot_set->referee_info.game_robot_status_data.robot_level;
+        const bool referee_connected = RefereeRuntime::is_connected(*robot_set);
+        const uint16_t robot_level = referee_connected
+                                         ? robot_set->referee_info.game_robot_status_data.robot_level
+                                         : 1U;
         const uint16_t level_index = static_cast<uint16_t>(
             std::clamp<int>(static_cast<int>(robot_level), 1, static_cast<int>(Power::maxLevel)) - 1);
-        const uint8_t game_type = robot_set->referee_info.game_status_data.game_type;
+        const uint8_t game_type =
+            referee_connected ? robot_set->referee_info.game_status_data.game_type : 0U;
         const float referee_limit =
             static_cast<float>(robot_set->referee_info.game_robot_status_data.chassis_power_limit);
         const float fallback_limit = MUXDEF(
@@ -42,11 +46,12 @@ namespace Device
             static_cast<float>(Power::HeroChassisPowerLimit_HP_FIRST[level_index]),
             MUXDEF(
                 CONFIG_INFANTRY,
-                (game_type == Power::RefGameTypeInfantryDuel)
+                (referee_connected && game_type == Power::RefGameTypeInfantryDuel)
                     ? Power::InfantryDuelChassisPowerLimit
                     : static_cast<float>(Power::InfantryChassisPowerLimit_HP_FIRST[level_index]),
                 static_cast<float>(Power::SentryChassisPowerLimit)));
-        const float target_limit = referee_limit > 0.0f ? referee_limit : fallback_limit;
+        const float target_limit =
+            referee_connected && referee_limit > 0.0f ? referee_limit : fallback_limit;
         const uint16_t power_limit = static_cast<uint16_t>(
             std::clamp(target_limit * CAP_POWER_LIMIT_SCALE, 1.0f, 65535.0f));
 
@@ -73,14 +78,7 @@ namespace Device
         }
 
         can_frame send{};
-        const uint64_t now_ms = static_cast<uint64_t>(
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now().time_since_epoch())
-                .count());
-        const bool referee_connected =
-            robot_set->referee_last_rx_ms > 0 &&
-            now_ms >= robot_set->referee_last_rx_ms &&
-            now_ms - robot_set->referee_last_rx_ms <= REFEREE_OFFLINE_TIMEOUT_MS;
+        const bool referee_connected = RefereeRuntime::is_connected(*robot_set);
         const uint16_t referee_buffer_energy = referee_connected
                                                    ? robot_set->referee_info.power_heat_data.chassis_power_buffer
                                                    : 60U;

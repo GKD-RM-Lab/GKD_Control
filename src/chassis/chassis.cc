@@ -4,6 +4,7 @@
 #include <string>
 #include <thread>
 #include "logger.hpp"
+#include "referee_runtime.hpp"
 #include "socket_interface.hpp"
 #include "robot_type_config.hpp"
 #include "types.hpp"
@@ -72,7 +73,10 @@ namespace Chassis
     [[noreturn]] void Chassis::task() {
         std::jthread power_daemon(&Power::Manager::powerDaemon, &power_manager);
         while (true) { 
-            if (!robot_set->referee_info.game_robot_status_data.mains_power_chassis_output) {
+            const bool referee_connected = RefereeRuntime::is_connected(*robot_set);
+            const bool chassis_output_enabled =
+                RefereeRuntime::chassis_output_enabled(*robot_set, referee_connected);
+            if (!chassis_output_enabled) {
                 setAllMotorsZero();
                 cleanWheelControllers(true);
                 chassis_angle_pid.clean();

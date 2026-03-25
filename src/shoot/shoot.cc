@@ -8,6 +8,7 @@
 #include "logger.hpp"
 #include "macro_helpers.hpp"
 #include "pid_controller.hpp"
+#include "referee_runtime.hpp"
 #include "robot_type_config.hpp"
 #include "types.hpp"
 #include "user_lib.hpp"
@@ -16,7 +17,6 @@
 namespace Shoot
 {
     namespace {
-        constexpr uint64_t REFEREE_OFFLINE_TIMEOUT_MS = 300U;
         constexpr uint8_t REF_GAME_TYPE_INFANTRY_DUEL = 5U;
         constexpr float INFANTRY_DUEL_HEAT_BLOCK_RATIO = 0.55f;
 
@@ -108,7 +108,12 @@ namespace Shoot
         auto timest = std::chrono::steady_clock::now();
         bool isJamFlag = false;
         while (true) {
-            if(!robot_set->referee_info.game_robot_status_data.mains_power_shooter_output) {
+            const uint64_t now_ms = RefereeRuntime::now_ms();
+            const bool referee_connected = RefereeRuntime::is_connected(*robot_set, now_ms);
+            const bool shooter_output_enabled =
+                RefereeRuntime::shooter_output_enabled(*robot_set, referee_connected);
+
+            if(!shooter_output_enabled) {
                 trigger.set_zero();
                 left_friction.set_zero();
                 right_friction.set_zero();
@@ -155,15 +160,6 @@ namespace Shoot
 
             // }
             
-            const uint64_t now_ms = static_cast<uint64_t>(
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now().time_since_epoch())
-                    .count());
-            const bool referee_connected =
-                robot_set->referee_last_rx_ms > 0 &&
-                now_ms >= robot_set->referee_last_rx_ms &&
-                now_ms - robot_set->referee_last_rx_ms <= REFEREE_OFFLINE_TIMEOUT_MS;
-
             const uint16_t heat_limit =
                 robot_set->referee_info.game_robot_status_data.shooter_cooling_limit;
             const uint16_t cooling_rate =
@@ -177,7 +173,8 @@ namespace Shoot
             const HeatMode heat_mode = infer_heat_mode(heat_limit, cooling_rate);
             int32_t block_margin = heat_block_margin(heat_mode);
             int32_t release_margin = heat_release_margin(heat_mode);
-            const bool infantry_duel_mode = is_infantry_duel_mode(*robot_set);
+            const bool infantry_duel_mode =
+                referee_connected && is_infantry_duel_mode(*robot_set);
             if (infantry_duel_mode && heat_limit > 0U) {
                  const int32_t duel_margin = std::max(
                     1,
@@ -200,18 +197,27 @@ namespace Shoot
             }
             const bool shoot_heat = !heat_blocked;
 
-            bool remain_bullet = MUXDEF(
-                CONFIG_HERO,
-                robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_42_mm > 0,
-                MUXDEF(
-                    CONFIG_INFANTRY,
-                    robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_17_mm > 0,
-                    robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_17_mm > 0));
+            bool remain_bullet = referee_connected
+                                     ? MUXDEF(
+                                           CONFIG_HERO,
+                                           robot_set->referee_info.bullet_allowance_data
+                                                   .bullet_allowance_num_42_mm > 0,
+                                           MUXDEF(
+                                               CONFIG_INFANTRY,
+                                               robot_set->referee_info.bullet_allowance_data
+                                                       .bullet_allowance_num_17_mm > 0,
+                                               robot_set->referee_info.bullet_allowance_data
+                                                       .bullet_allowance_num_17_mm > 0))
+                                     : true;
 
-            bool referee_fire_allowance = 
-                (shoot_heat && remain_bullet) ||
-                !((robot_set->referee_info.game_status_data.game_progress & 0x0f) == 4) && 
-                (robot_set->auto_aim_status != 1 || robot_set->cv_fire == 1);
+            bool referee_fire_allowance = referee_connected
+                                              ? ((shoot_heat && remain_bullet) ||
+                                                 (!((robot_set->referee_info.game_status_data
+                                                         .game_progress &
+                                                     0x0f) == 4) &&
+                                                  (robot_set->auto_aim_status != 1 ||
+                                                   robot_set->cv_fire == 1)))
+                                              : true;
             const bool friction_ok = isFrictionOK();
 
             if (last_shoot_heat != shoot_heat || last_heat_mode != heat_mode) {
@@ -232,10 +238,6 @@ namespace Shoot
 
             if (++heat_log_div >= 100U) {
                 heat_log_div = 0U;
-                const uint16_t remain_bullets = MUXDEF(
-                    CONFIG_HERO,
-                    robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_42_mm,
-                    robot_set->referee_info.bullet_allowance_data.bullet_allowance_num_17_mm);
 
                 // LOG_INFO(
                 //     "[HEAT_MON] ref:%s mode:%s heat:%u/%u margin:%d cool:%u bullet:%u allow:%s prog:%u fric:%s fric_ok:%s shoot:%s no_force:%s\n",

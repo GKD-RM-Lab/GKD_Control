@@ -405,7 +405,7 @@ std::array<float, 4> Manager::getControlledOutput(PowerObj *objs[4]) {
             } else {
                 refereeMaxPower =
                     fmax(
-                        detail::fallback_referee_limit(*this, LATEST_FEEDBACK_JUDGE_ROBOT_LEVEL),
+                        detail::offline_referee_limit(*this, LATEST_FEEDBACK_JUDGE_ROBOT_LEVEL),
                         CAP_OFFLINE_ENERGY_RUNOUT_POWER_THRESHOLD);
                 if (capConnected) {
                     powerUpperLimit = refereeMaxPower + MAX_CAP_POWER_OUT;
