@@ -692,15 +692,19 @@ volatile UI_DisplayData_Type UI_Data;
 State_Indicate_Type State_Data;
 String_Data state_text_data;
 String_Data fired_text_data;
+String_Data warning_text_data;
 Graph_Data shoot_distance_bar, cap_percentage, cap_full_frame, auto_aim_range;
 Graph_Data still_cross_line[10];
-char cap_text[30], auto_aim_text[10], fired_text[30];
+char cap_text[30], auto_aim_text[10], fired_text[30], warning_text[16];
 int count = 0;  // 计数器
 
 namespace
 {
     constexpr u32 kCapBarYOffset = 18;
     constexpr u32 kCapFrameWidth = 2;
+    constexpr u32 kWarningTextSize = 30;
+    constexpr u32 kWarningTextChars = 8;
+    constexpr u32 kWarningTextY = 330;
     constexpr int kUiPacketGapMs = 30;
     constexpr int kUiUpdateIntervalMs = 200;
     constexpr int kUiRetryIntervalMs = 100;
@@ -857,6 +861,25 @@ namespace
             fired_text);
     }
 
+    void build_warning_text(u32 operate_type) {
+        std::snprintf(warning_text, sizeof(warning_text), "WARNING!");
+        const u32 text_color = UI_Data.low_ammo_warning ? UI_Color_Purplish_red : UI_Color_Black;
+        const u32 start_x =
+            Crosshair_Data.center[0] - (kWarningTextSize * kWarningTextChars) / 4;
+        String_Draw(
+            &warning_text_data,
+            "war",
+            operate_type,
+            1,
+            text_color,
+            kWarningTextSize,
+            kWarningTextChars,
+            3,
+            start_x,
+            kWarningTextY,
+            warning_text);
+    }
+
     void draw_static_ui(Device::Base *base_) {
         if (UI_MODE == UI_HERO) {
             draw_crosshair_hero(base_);
@@ -883,6 +906,10 @@ namespace
         build_fired_text(string_operate);
         String_ReFresh(base_, fired_text_data);
         osDelay(kUiPacketGapMs);
+
+        build_warning_text(string_operate);
+        String_ReFresh(base_, warning_text_data);
+        osDelay(kUiPacketGapMs);
     }
 
     void refresh_dynamic_ui_incremental(Device::Base *base_) {
@@ -903,14 +930,18 @@ namespace
                 build_state_text(UI_Graph_Change);
                 String_ReFresh(base_, state_text_data);
                 break;
-            default:
+            case 2:
                 build_fired_text(UI_Graph_Change);
                 String_ReFresh(base_, fired_text_data);
+                break;
+            default:
+                build_warning_text(UI_Graph_Change);
+                String_ReFresh(base_, warning_text_data);
                 break;
         }
         osDelay(kUiPacketGapMs);
 
-        refresh_phase = (refresh_phase + 1) % 3;
+        refresh_phase = (refresh_phase + 1) % 4;
     }
 
     void full_redraw_ui(Device::Base *base_) {
@@ -960,7 +991,8 @@ void update_ui_data(
     bool spin_state,
     float cap_state,
     uint32_t purchased_bullet_num,
-    uint32_t remain_bullet_num) {
+    uint32_t remain_bullet_num,
+    bool low_ammo_warning) {
     UI_Data.distance = 10;
     UI_Data.auto_aim_state = auto_aim_state ? AUTOAIM_LOCKED : AUTOAIM_LOST;
     UI_Data.fric_state = fric_state;
@@ -978,6 +1010,7 @@ void update_ui_data(
     UI_Data.fired_bullet_num = fired_bullet_num > static_cast<uint32_t>(INT_MAX)
                                    ? INT_MAX
                                    : static_cast<int>(fired_bullet_num);
+    UI_Data.low_ammo_warning = low_ammo_warning ? 1 : 0;
 }
 
 /*画英雄的静止准星*/

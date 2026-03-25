@@ -295,7 +295,10 @@ namespace Device
                 robot_set->spin_state,
                 ((float)robot_set->super_cap_info.capEnergy / 250) * 100,
                 purchased_bullet_num,
-                remain_bullet_num_for_ui);
+                remain_bullet_num_for_ui,
+                referee_connected &&
+                    robot_set->referee_info.game_robot_status_data.mains_power_shooter_output &&
+                    remain_bullet_num < 20U);
 
 #ifdef CONFIG_INFANTRY
             sendLedFrame(robot_set);

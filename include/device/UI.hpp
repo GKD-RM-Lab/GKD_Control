@@ -306,6 +306,7 @@ typedef struct
     int purchased_bullet_num; // 已购买弹丸数量
     int remain_bullet_num;    // 可发射弹丸数量
     int fired_bullet_num;     // 已发射弹丸数量
+    int low_ammo_warning;     // 低弹量警告
 } UI_DisplayData_Type;
 
 /*描述准星的结构体*/
@@ -390,7 +391,8 @@ void update_ui_data(
     bool spin_state,
     float cap_state,
     uint32_t purchased_bullet_num,
-    uint32_t remain_bullet_num);
+    uint32_t remain_bullet_num,
+    bool low_ammo_warning);
 
 #pragma pack(pop)
 #endif
